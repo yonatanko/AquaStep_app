@@ -1,10 +1,16 @@
 package com.example.tutorial6;
 
 import android.Manifest;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,6 +22,8 @@ import com.chaquo.python.android.AndroidPlatform;
 
 
 public class MainActivity extends AppCompatActivity implements FragmentManager.OnBackStackChangedListener {
+    NotificationManagerCompat notificationManagerCompat;
+    Notification notification;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,11 +46,21 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
         if (! Python.isStarted()) {
             Python.start(new AndroidPlatform(this));
         }
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            NotificationChannel channel = new NotificationChannel("myCh", "My Channel", NotificationManager.IMPORTANCE_DEFAULT);
 
-//        Python py =  Python.getInstance();
-//        PyObject pyobj = py.getModule("test");
-//        PyObject obj = pyobj.callAttr("main");
-//        textview.setText(obj.toString());
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            manager.createNotificationChannel(channel);
+        }
+
+//        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "myCh")
+//                .setSmallIcon(R.drawable.noification_logo)
+//                .setContentTitle("First Notfication")
+//                .setContentText("Hello");
+//
+//        notification = builder.build();
+//        notificationManagerCompat = NotificationManagerCompat.from(this);
+//        notificationManagerCompat.notify(1, notification);
 
         }
 

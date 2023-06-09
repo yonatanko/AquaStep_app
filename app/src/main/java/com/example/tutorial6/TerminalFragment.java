@@ -2,6 +2,9 @@ package com.example.tutorial6;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
@@ -34,6 +37,8 @@ import android.text.method.ScrollingMovementMethod;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.Fragment;
 
 import com.github.mikephil.charting.charts.LineChart;
@@ -106,6 +111,12 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     Python py =  Python.getInstance();
     PyObject pyobj = py.getModule("test");
 
+    NotificationManagerCompat notificationManagerCompat;
+
+    Notification notification;
+
+    int notificationCounter = 0;
+
 
     /*
      * Lifecycle
@@ -115,6 +126,8 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
         deviceAddress = getArguments().getString("device");
+
+
 
     }
 
@@ -316,6 +329,14 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
             }
         });
 
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(getActivity(), "myCh")
+                .setSmallIcon(R.drawable.noification_logo)
+                .setContentTitle("First Notfication")
+                .setContentText("Hello");
+
+        notification = builder.build();
+        notificationManagerCompat = NotificationManagerCompat.from(getActivity());
+
         return view;
     }
 
@@ -425,6 +446,9 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         } else {
             String msg = new String(message);
             if(newline.equals(TextUtil.newline_crlf) && msg.length() > 0) {
+                notificationCounter+=1;
+                if (notificationCounter % 100 == 0)
+                    notificationManagerCompat.notify(notificationCounter, notification);
                 String msg_to_save = msg;
                 msg_to_save = msg.replace(TextUtil.newline_crlf, TextUtil.emptyString);
                 if (msg_to_save.length() > 1){
