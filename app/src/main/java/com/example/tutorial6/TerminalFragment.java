@@ -201,8 +201,8 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.main_screen, container, false);
         receiveText = view.findViewById(R.id.receive_text3);                       // TextView performance decreases with number of spans
-        receiveText.setTextColor(getResources().getColor(R.color.colorRecieveText)); // set as default color to reduce number of spans
-        receiveText.setMovementMethod(ScrollingMovementMethod.getInstance());
+        receiveText.setText("0");
+        receiveText.setTextColor(getResources().getColor(R.color.white)); // set as default color to reduce number of spans
         pbar = view.findViewById(R.id.progressBar4);
         pbar.setMax(20);
 
@@ -354,7 +354,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.clear) {
-            receiveText.setText("");
+            receiveText.setText("0");
             return true;
         } else if (id == R.id.newline) {
             String[] newlineNames = getResources().getStringArray(R.array.newline_names);
@@ -520,7 +520,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
                         mpLineChart.invalidate(); // refresh
                     }
 
-                    String text_to_show = "cups of water: " + String.valueOf(notificationCounter/100);
+                    String text_to_show = String.valueOf(notificationCounter/100);
                     receiveText.setText(text_to_show);
 
                 } catch (IOException e) {
