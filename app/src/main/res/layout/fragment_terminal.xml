@@ -15,7 +15,7 @@
     <TextView
         android:id="@+id/receive_text"
         android:layout_width="261dp"
-        android:layout_height="124dp"
+        android:layout_height="175dp"
         android:layout_gravity="center_horizontal"
         android:layout_weight="1"
         android:freezesText="true"

@@ -3,8 +3,6 @@ package com.example.tutorial6;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
@@ -15,7 +13,6 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
@@ -28,6 +25,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -117,6 +115,10 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
 
     int notificationCounter = 0;
 
+    int counterPbar = 0;
+
+    ProgressBar pbar;
+
 
     /*
      * Lifecycle
@@ -197,137 +199,139 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
      */
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_terminal, container, false);
-        receiveText = view.findViewById(R.id.receive_text);                          // TextView performance decreases with number of spans
+        View view = inflater.inflate(R.layout.main_screen, container, false);
+        receiveText = view.findViewById(R.id.receive_text3);                       // TextView performance decreases with number of spans
         receiveText.setTextColor(getResources().getColor(R.color.colorRecieveText)); // set as default color to reduce number of spans
         receiveText.setMovementMethod(ScrollingMovementMethod.getInstance());
+        pbar = view.findViewById(R.id.progressBar4);
+        pbar.setMax(20);
 
-        mpLineChart = (LineChart) view.findViewById(R.id.line_chart);
+////        mpLineChart = (LineChart) view.findViewById(R.id.line_chart);
+//
+//        N_lineDataSet =  new LineDataSet(emptyDataValues(), "N");
+//        dataSets.add(N_lineDataSet);
+//        N_lineDataSet.setLineWidth(1.5f);
+//        N_lineDataSet.setColor(Color.RED);
+//        N_lineDataSet.setCircleColor(Color.RED);
+//
+//        data = new LineData(dataSets);
+//        mpLineChart.setData(data);
+//        mpLineChart.invalidate();
 
-        N_lineDataSet =  new LineDataSet(emptyDataValues(), "N");
-        dataSets.add(N_lineDataSet);
-        N_lineDataSet.setLineWidth(1.5f);
-        N_lineDataSet.setColor(Color.RED);
-        N_lineDataSet.setCircleColor(Color.RED);
+//        Button buttonCsvShow = (Button) view.findViewById(R.id.button2);
+//        Button buttonStart = (Button) view.findViewById(R.id.StartButton);
+//        Button buttonStop = (Button) view.findViewById(R.id.StopButton);
+//        Button buttonReset = (Button) view.findViewById(R.id.ResetButton);
+//        Button buttonSave = (Button) view.findViewById(R.id.SaveButton);
 
-        data = new LineData(dataSets);
-        mpLineChart.setData(data);
-        mpLineChart.invalidate();
+//        final EditText fileName = view.findViewById(R.id.EditFileName);
+//        final EditText numSteps = view.findViewById(R.id.EditNumberOfSteps);
+//        final RadioGroup activityType = view.findViewById(R.id.RadioGroup);
 
-        Button buttonCsvShow = (Button) view.findViewById(R.id.button2);
-        Button buttonStart = (Button) view.findViewById(R.id.StartButton);
-        Button buttonStop = (Button) view.findViewById(R.id.StopButton);
-        Button buttonReset = (Button) view.findViewById(R.id.ResetButton);
-        Button buttonSave = (Button) view.findViewById(R.id.SaveButton);
-
-        final EditText fileName = view.findViewById(R.id.EditFileName);
-        final EditText numSteps = view.findViewById(R.id.EditNumberOfSteps);
-        final RadioGroup activityType = view.findViewById(R.id.RadioGroup);
-
-        buttonCsvShow.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                OpenLoadCSV();
-            }
-        });
-
-        buttonStart.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!recording) {
-                    recording = true;
-                    is_first_start = true;
-                    reset = false;
-                    stopped = false;
-                    num_of_steps = 0;
-                    Toast.makeText(getActivity(), "Started recording", Toast.LENGTH_SHORT).show();
-                }
-                else{
-                    Toast.makeText(getActivity(), "Can not start another record while recording!", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-
-        buttonStop.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (recording) {
-                    recording = false;
-                    stopped = true;
-                    Toast.makeText(getActivity(), "Stopped recording", Toast.LENGTH_SHORT).show();
-                }
-                else{
-                    Toast.makeText(getActivity(), "Stopped without starting!", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-
-        buttonSave.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (stopped){
-                    saving = true;
-                    nameValue = fileName.getText().toString();
-                    stepsValue = numSteps.getText().toString();
-                    int selectedRadioBtnID = activityType.getCheckedRadioButtonId();
-                    if (selectedRadioBtnID != -1) {
-                        selectedBtn = view.findViewById(selectedRadioBtnID);
-                        activityValue = selectedBtn.getText().toString();
-                    }
-
-                    reset = true;
-                    is_first_reset = true;
-
-                    mpLineChart.clear();
-                    data.clearValues();
-                    mpLineChart = (LineChart) view.findViewById(R.id.line_chart);
-
-                    N_lineDataSet = new LineDataSet(emptyDataValues(), "N");
-                    dataSets.add(N_lineDataSet);
-                    N_lineDataSet.setLineWidth(1.5f);
-                    N_lineDataSet.setColor(Color.RED);
-                    N_lineDataSet.setCircleColor(Color.RED);
-
-                    data = new LineData(dataSets);
-                    mpLineChart.setData(data);
-                    mpLineChart.invalidate();
-
-                }
-                else{
-                    Toast.makeText(getActivity(), "Can not save before stopping!", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-
-        buttonReset.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!recording) {
-                    reset = true;
-                    is_first_reset = true;
-                    rowsContainer = new ArrayList<>();
-                    num_of_steps = 0;
-                    Toast.makeText(getActivity(), "Reset done", Toast.LENGTH_SHORT).show();
-
-                    mpLineChart.clear();
-                    data.clearValues();
-                    mpLineChart = (LineChart) view.findViewById(R.id.line_chart);
-
-                    N_lineDataSet = new LineDataSet(emptyDataValues(), "N");
-                    dataSets.add(N_lineDataSet);
-                    N_lineDataSet.setLineWidth(1.5f);
-                    N_lineDataSet.setColor(Color.RED);
-                    N_lineDataSet.setCircleColor(Color.RED);
-
-                    data = new LineData(dataSets);
-                    mpLineChart.setData(data);
-                    mpLineChart.invalidate();
-                }
-                else{
-                    Toast.makeText(getActivity(), "Can not reset while recording!", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+//        buttonCsvShow.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                OpenLoadCSV();
+//            }
+//        });
+//
+//        buttonStart.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                if (!recording) {
+//                    recording = true;
+//                    is_first_start = true;
+//                    reset = false;
+//                    stopped = false;
+//                    num_of_steps = 0;
+//                    Toast.makeText(getActivity(), "Started recording", Toast.LENGTH_SHORT).show();
+//                }
+//                else{
+//                    Toast.makeText(getActivity(), "Can not start another record while recording!", Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        });
+//
+//        buttonStop.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                if (recording) {
+//                    recording = false;
+//                    stopped = true;
+//                    Toast.makeText(getActivity(), "Stopped recording", Toast.LENGTH_SHORT).show();
+//                }
+//                else{
+//                    Toast.makeText(getActivity(), "Stopped without starting!", Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        });
+//
+//        buttonSave.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                if (stopped){
+//                    saving = true;
+////                    nameValue = fileName.getText().toString();
+////                    stepsValue = numSteps.getText().toString();
+//                    int selectedRadioBtnID = activityType.getCheckedRadioButtonId();
+//                    if (selectedRadioBtnID != -1) {
+//                        selectedBtn = view.findViewById(selectedRadioBtnID);
+//                        activityValue = selectedBtn.getText().toString();
+//                    }
+//
+//                    reset = true;
+//                    is_first_reset = true;
+//
+//                    mpLineChart.clear();
+//                    data.clearValues();
+//                    mpLineChart = (LineChart) view.findViewById(R.id.line_chart);
+//
+//                    N_lineDataSet = new LineDataSet(emptyDataValues(), "N");
+//                    dataSets.add(N_lineDataSet);
+//                    N_lineDataSet.setLineWidth(1.5f);
+//                    N_lineDataSet.setColor(Color.RED);
+//                    N_lineDataSet.setCircleColor(Color.RED);
+//
+//                    data = new LineData(dataSets);
+//                    mpLineChart.setData(data);
+//                    mpLineChart.invalidate();
+//
+//                }
+//                else{
+//                    Toast.makeText(getActivity(), "Can not save before stopping!", Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        });
+//
+//        buttonReset.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                if (!recording) {
+//                    reset = true;
+//                    is_first_reset = true;
+//                    rowsContainer = new ArrayList<>();
+//                    num_of_steps = 0;
+//                    Toast.makeText(getActivity(), "Reset done", Toast.LENGTH_SHORT).show();
+//
+//                    mpLineChart.clear();
+//                    data.clearValues();
+//                    mpLineChart = (LineChart) view.findViewById(R.id.line_chart);
+//
+//                    N_lineDataSet = new LineDataSet(emptyDataValues(), "N");
+//                    dataSets.add(N_lineDataSet);
+//                    N_lineDataSet.setLineWidth(1.5f);
+//                    N_lineDataSet.setColor(Color.RED);
+//                    N_lineDataSet.setCircleColor(Color.RED);
+//
+//                    data = new LineData(dataSets);
+//                    mpLineChart.setData(data);
+//                    mpLineChart.invalidate();
+//                }
+//                else{
+//                    Toast.makeText(getActivity(), "Can not reset while recording!", Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        });
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getActivity(), "myCh2")
                 .setSmallIcon(R.drawable.noification_logo)
@@ -419,6 +423,8 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
             notificationCounter+=1;
             Log.d("notification counter", String.valueOf(notificationCounter));
             if (notificationCounter % 100 == 0){
+                counterPbar+=1;
+                pbar.setProgress(counterPbar);
                 notificationManagerCompat.notify(notificationCounter, notification);
             }
             String msg_to_save = msg;
@@ -514,7 +520,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
                         mpLineChart.invalidate(); // refresh
                     }
 
-                    String text_to_show = "Number of steps recorded: " + String.valueOf(num_of_steps);
+                    String text_to_show = "cups of water: " + String.valueOf(notificationCounter/100);
                     receiveText.setText(text_to_show);
 
                 } catch (IOException e) {
