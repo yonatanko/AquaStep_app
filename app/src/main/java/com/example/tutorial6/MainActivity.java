@@ -36,33 +36,24 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
             ActivityCompat.requestPermissions(MainActivity.this,new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},0);
         }
 
-            if (savedInstanceState == null) {
+        if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
-            }
+        }
         else {
-                onBackStackChanged();
-            }
+            onBackStackChanged();
+        }
 
         if (! Python.isStarted()) {
             Python.start(new AndroidPlatform(this));
         }
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
-            NotificationChannel channel = new NotificationChannel("myCh", "My Channel", NotificationManager.IMPORTANCE_DEFAULT);
+            NotificationChannel channel = new NotificationChannel("myCh2", "My Channel2", NotificationManager.IMPORTANCE_DEFAULT);
 
             NotificationManager manager = getSystemService(NotificationManager.class);
             manager.createNotificationChannel(channel);
         }
 
-//        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "myCh")
-//                .setSmallIcon(R.drawable.noification_logo)
-//                .setContentTitle("First Notfication")
-//                .setContentText("Hello");
-//
-//        notification = builder.build();
-//        notificationManagerCompat = NotificationManagerCompat.from(this);
-//        notificationManagerCompat.notify(1, notification);
-
-        }
+    }
 
 
     @Override

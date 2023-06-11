@@ -5,16 +5,22 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioAttributes;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -47,6 +53,12 @@ public class SerialService extends Service implements SerialListener {
     private SerialSocket socket;
     private SerialListener listener;
     private boolean connected;
+
+    NotificationManagerCompat notificationManagerCompat;
+
+    Notification notification;
+
+    int counter;
 
     /**
      * Lifecylce
@@ -125,8 +137,9 @@ public class SerialService extends Service implements SerialListener {
     }
 
     public void detach() {
-        if(connected)
+        if(connected) {
             createNotification();
+        }
         // items already in event queue (posted before detach() to mainLooper) will end up in queue1
         // items occurring later, will be moved directly to queue2
         // detach() and mainLooper.post run in the main thread, so all items are caught
@@ -152,7 +165,7 @@ public class SerialService extends Service implements SerialListener {
                 .setSmallIcon(R.drawable.ic_notification)
                 .setColor(getResources().getColor(R.color.colorPrimary))
                 .setContentTitle(getResources().getString(R.string.app_name))
-                .setContentText(socket != null ? "Connected to "+socket.getName() : "Background Service")
+                .setContentText(socket != null ? "Connected to "+ socket.getName() : "Background Service")
                 .setContentIntent(restartPendingIntent)
                 .setOngoing(true)
                 .addAction(new NotificationCompat.Action(R.drawable.ic_clear_white_24dp, "Disconnect", disconnectPendingIntent));
@@ -161,6 +174,26 @@ public class SerialService extends Service implements SerialListener {
         Notification notification = builder.build();
         startForeground(Constants.NOTIFY_MANAGER_START_FOREGROUND_SERVICE, notification);
     }
+
+    public void createPushNotification() {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "myCh2")
+                .setSmallIcon(R.drawable.noification_logo)
+                .setContentTitle(getResources().getString(R.string.app_name))
+                .setContentText("Hello");
+
+        Notification notification = builder.build();
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+        counter += 1;
+        if (counter % 100 == 0)
+            notificationManager.notify(counter, notification);
+    }
+
+
+
+
+
+
 
     private void cancelNotification() {
         stopForeground(true);
@@ -218,10 +251,13 @@ public class SerialService extends Service implements SerialListener {
                             listener.onSerialRead(data);
                         } else {
                             queue1.add(new QueueItem(QueueType.Read, data, null));
+                            Log.d("queue1", new String(data));
                         }
                     });
                 } else {
                     queue2.add(new QueueItem(QueueType.Read, data, null));
+                    Log.d("queue2", new String(data));
+                    createPushNotification();
                 }
             }
         }

@@ -329,7 +329,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
             }
         });
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(getActivity(), "myCh")
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(getActivity(), "myCh2")
                 .setSmallIcon(R.drawable.noification_logo)
                 .setContentTitle("First Notfication")
                 .setContentText("Hello");
@@ -405,33 +405,6 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         service.disconnect();
     }
 
-    private void send(String str) {
-        if(connected != Connected.True) {
-            Toast.makeText(getActivity(), "not connected", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        try {
-            String msg;
-            byte[] data;
-            if(hexEnabled) {
-                StringBuilder sb = new StringBuilder();
-                TextUtil.toHexString(sb, TextUtil.fromHexString(str));
-                TextUtil.toHexString(sb, newline.getBytes());
-                msg = sb.toString();
-                data = TextUtil.fromHexString(msg);
-            } else {
-                msg = str;
-                data = (str + newline).getBytes();
-            }
-            SpannableStringBuilder spn = new SpannableStringBuilder(msg + '\n');
-            spn.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.colorSendText)), 0, spn.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            receiveText.append(spn);
-            service.write(data);
-        } catch (Exception e) {
-            onSerialIoError(e);
-        }
-    }
-
     private void writeToCsv(ArrayList<String[]> rowsContainer, CSVWriter csvWriter){
         for (int i = 0; i < rowsContainer.size(); i++){
             csvWriter.writeNext(rowsContainer.get(i));
@@ -440,118 +413,114 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     private void receive(byte[] message) {
+        String msg = new String(message);
+        Log.d("message", msg);
+        if(newline.equals(TextUtil.newline_crlf) && msg.length() > 0) {
+            notificationCounter+=1;
+            Log.d("notification counter", String.valueOf(notificationCounter));
+            if (notificationCounter % 100 == 0){
+                notificationManagerCompat.notify(notificationCounter, notification);
+            }
+            String msg_to_save = msg;
+            msg_to_save = msg.replace(TextUtil.newline_crlf, TextUtil.emptyString);
+            if (msg_to_save.length() > 1){
+                String[] parts = msg_to_save.split(",");
+                parts = clean_str(parts);
+                parts[3] = String.valueOf(Integer.parseInt(parts[3])/1000.0);
 
-        if(hexEnabled) {
-//            receiveText.append(TextUtil.toHexString(message) + '\n');
-        } else {
-            String msg = new String(message);
-            if(newline.equals(TextUtil.newline_crlf) && msg.length() > 0) {
-                notificationCounter+=1;
-                if (notificationCounter % 100 == 0)
-                    notificationManagerCompat.notify(notificationCounter, notification);
-                String msg_to_save = msg;
-                msg_to_save = msg.replace(TextUtil.newline_crlf, TextUtil.emptyString);
-                if (msg_to_save.length() > 1){
-                    String[] parts = msg_to_save.split(",");
-                    parts = clean_str(parts);
-                    parts[3] = String.valueOf(Integer.parseInt(parts[3])/1000.0);
+                try {
+                    File file = new File("/sdcard/csv_dir/");
+                    file.mkdirs();
 
-                    // Check if the message has four parts (three floats and one integer)
-
-                    try {
-                        File file = new File("/sdcard/csv_dir/");
-                        file.mkdirs();
-
-                        float x = Float.parseFloat(parts[0]);
-                        float y = Float.parseFloat(parts[1]);
-                        float z = Float.parseFloat(parts[2]);
-                        PyObject obj = pyobj.callAttr("main", x,y,z);
-                        float n_value = obj.toFloat();
-                        n_value_list.add(n_value);
-                        Log.d("size", String.valueOf(n_value_list.size()));
+                    float x = Float.parseFloat(parts[0]);
+                    float y = Float.parseFloat(parts[1]);
+                    float z = Float.parseFloat(parts[2]);
+                    PyObject obj = pyobj.callAttr("main", x,y,z);
+                    float n_value = obj.toFloat();
+                    n_value_list.add(n_value);
+                    Log.d("size", String.valueOf(n_value_list.size()));
 
 
-                        // Parse the string values: parts[0], parts[1], parts[2] are floats, and parts[3] is an integer
-                        if (recording) {
-                            float latest_t =  Float.parseFloat(parts[3]);
-                            if (is_first_start)
-                            {
-                                t0 = latest_t;
-                                is_first_start = false;
-                            }
-                            float actual_t = latest_t - t0;
-                            String row[] = new String[]{String.valueOf(actual_t), parts[0], parts[1], parts[2]};
-                            rowsContainer.add(row);
+                    // Parse the string values: parts[0], parts[1], parts[2] are floats, and parts[3] is an integer
+                    if (recording) {
+                        float latest_t =  Float.parseFloat(parts[3]);
+                        if (is_first_start)
+                        {
+                            t0 = latest_t;
+                            is_first_start = false;
                         }
-
-                        if (reset) {
-                            if (is_first_reset)
-                            {
-                                plot_t0 = Float.parseFloat(parts[3]);
-                                is_first_reset = false;
-                            }
-                            if (!saving) {num_of_steps = 0;}
-                            reset = false;
-                        }
-
-                        if (saving) {
-                            if (nameValue.length() > 0 && activityValue != null && stepsValue.length() > 0) {
-                                String currentCsv = "/sdcard/csv_dir/" + nameValue + ".csv";
-                                CSVWriter csvWriter = new CSVWriter(new FileWriter(currentCsv,true));
-                                String name_row[] = new String[]{"NAME:", nameValue + ".csv", "", ""};
-                                csvWriter.writeNext(name_row);
-                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy hh:mm");
-                                String date = LocalDateTime.now().format(formatter);
-                                String date_row[] = new String[]{"EXPERIMENT TIME:", date, "", ""};
-                                csvWriter.writeNext(date_row);
-                                String activity_row[] = new String[]{"ACTIVITY TYPE:", activityValue, "", ""};
-                                csvWriter.writeNext(activity_row);
-                                String steps_row[] = new String[]{"COUNT OF ACTUAL STEPS: ", stepsValue, "", ""};
-                                csvWriter.writeNext(steps_row);
-                                String estimates_steps_row[] = new String[]{"ESTIMATED NUMBER OF STEPS: ", String.valueOf(num_of_steps), "", ""};
-                                csvWriter.writeNext(estimates_steps_row);
-                                String empty_row[] = new String[]{"", "", "", ""};
-                                csvWriter.writeNext(empty_row);
-                                String header_row[] = new String[]{"Time [sec]", "ACC X", "ACC Y", "ACC Z"};
-                                csvWriter.writeNext(header_row);
-                                writeToCsv(rowsContainer, csvWriter);
-                                csvWriter.close();
-                                Toast.makeText(getActivity(), "Saved the record", Toast.LENGTH_SHORT).show();
-
-                                num_of_steps = 0;
-                            }
-                            else {
-                                Toast.makeText(getActivity(), "Haven't filled out all the inputs! Record failed!", Toast.LENGTH_SHORT).show();
-                            }
-                                rowsContainer = new ArrayList<String[]>();
-                                saving = false;
-                        }
-                        if (n_value_list.size() == elements_to_avg) {
-                            float sum = 0.0f;
-                            for(int i = 0; i < elements_to_avg; i++)
-                                sum += n_value_list.get(i);
-                            last_ten_N_avg = sum / elements_to_avg;
-                            Log.d("avg is", String.valueOf(last_ten_N_avg));
-
-                            if (last_ten_N_avg > threshold) {
-                                num_of_steps++;
-                            }
-                            n_value_list.subList(0, elements_to_remove).clear();
-                            Log.d("size", String.valueOf(n_value_list.size()));
-                            data.addEntry(new Entry(Float.parseFloat(parts[3]) - plot_t0, last_ten_N_avg), 0);
-                            N_lineDataSet.notifyDataSetChanged(); // let the data know a dataSet changed
-                            mpLineChart.notifyDataSetChanged(); // let the chart know it's data changed
-                            mpLineChart.invalidate(); // refresh
-                        }
-
-                        String text_to_show = "Number of steps recorded: " + String.valueOf(num_of_steps);
-                        receiveText.setText(text_to_show);
-
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                        float actual_t = latest_t - t0;
+                        String row[] = new String[]{String.valueOf(actual_t), parts[0], parts[1], parts[2]};
+                        rowsContainer.add(row);
                     }
 
+                    if (reset) {
+                        if (is_first_reset)
+                        {
+                            plot_t0 = Float.parseFloat(parts[3]);
+                            is_first_reset = false;
+                        }
+                        if (!saving) {num_of_steps = 0;}
+                        reset = false;
+                    }
+
+                    if (saving) {
+                        if (nameValue.length() > 0 && activityValue != null && stepsValue.length() > 0) {
+                            String currentCsv = "/sdcard/csv_dir/" + nameValue + ".csv";
+                            CSVWriter csvWriter = new CSVWriter(new FileWriter(currentCsv,true));
+                            String name_row[] = new String[]{"NAME:", nameValue + ".csv", "", ""};
+                            csvWriter.writeNext(name_row);
+                            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy hh:mm");
+                            String date = LocalDateTime.now().format(formatter);
+                            String date_row[] = new String[]{"EXPERIMENT TIME:", date, "", ""};
+                            csvWriter.writeNext(date_row);
+                            String activity_row[] = new String[]{"ACTIVITY TYPE:", activityValue, "", ""};
+                            csvWriter.writeNext(activity_row);
+                            String steps_row[] = new String[]{"COUNT OF ACTUAL STEPS: ", stepsValue, "", ""};
+                            csvWriter.writeNext(steps_row);
+                            String estimates_steps_row[] = new String[]{"ESTIMATED NUMBER OF STEPS: ", String.valueOf(num_of_steps), "", ""};
+                            csvWriter.writeNext(estimates_steps_row);
+                            String empty_row[] = new String[]{"", "", "", ""};
+                            csvWriter.writeNext(empty_row);
+                            String header_row[] = new String[]{"Time [sec]", "ACC X", "ACC Y", "ACC Z"};
+                            csvWriter.writeNext(header_row);
+                            writeToCsv(rowsContainer, csvWriter);
+                            csvWriter.close();
+                            Toast.makeText(getActivity(), "Saved the record", Toast.LENGTH_SHORT).show();
+
+                            num_of_steps = 0;
+                        }
+                        else {
+                            Toast.makeText(getActivity(), "Haven't filled out all the inputs! Record failed!", Toast.LENGTH_SHORT).show();
+                        }
+                        rowsContainer = new ArrayList<String[]>();
+                        saving = false;
+                    }
+                    if (n_value_list.size() == elements_to_avg) {
+                        float sum = 0.0f;
+                        for(int i = 0; i < elements_to_avg; i++)
+                            sum += n_value_list.get(i);
+                        last_ten_N_avg = sum / elements_to_avg;
+                        Log.d("avg is", String.valueOf(last_ten_N_avg));
+
+                        if (last_ten_N_avg > threshold) {
+                            num_of_steps++;
+                        }
+                        n_value_list.subList(0, elements_to_remove).clear();
+                        Log.d("size", String.valueOf(n_value_list.size()));
+                        data.addEntry(new Entry(Float.parseFloat(parts[3]) - plot_t0, last_ten_N_avg), 0);
+                        N_lineDataSet.notifyDataSetChanged(); // let the data know a dataSet changed
+                        mpLineChart.notifyDataSetChanged(); // let the chart know it's data changed
+                        mpLineChart.invalidate(); // refresh
+                    }
+
+                    String text_to_show = "Number of steps recorded: " + String.valueOf(num_of_steps);
+                    receiveText.setText(text_to_show);
+
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
+
             }
         }
     }
@@ -582,7 +551,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     @Override
     public void onSerialRead(byte[] data) {
         try {
-        receive(data);}
+            receive(data);}
         catch (Exception e) {
             e.printStackTrace();
         }
