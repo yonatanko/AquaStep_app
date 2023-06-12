@@ -9,6 +9,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -120,6 +121,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     ProgressBar pbar;
 
 
+
     /*
      * Lifecycle
      */
@@ -205,6 +207,13 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         receiveText.setTextColor(getResources().getColor(R.color.white)); // set as default color to reduce number of spans
         pbar = view.findViewById(R.id.progressBar4);
         pbar.setMax(20);
+        SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+        String userName = sharedPref.getString("userName", "");
+        String userWeight = sharedPref.getString("userWeight", "");
+        String userActivity = sharedPref.getString("userActivity", "");
+        Toast.makeText(getActivity(), "user name: " + userName, Toast.LENGTH_LONG).show();
+        Toast.makeText(getActivity(), "weight: " + userWeight, Toast.LENGTH_LONG).show();
+        Toast.makeText(getActivity(), "num activity: " + userActivity, Toast.LENGTH_LONG).show();
 
 ////        mpLineChart = (LineChart) view.findViewById(R.id.line_chart);
 //

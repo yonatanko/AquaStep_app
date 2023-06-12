@@ -4,9 +4,17 @@ import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
@@ -24,6 +32,16 @@ import com.chaquo.python.android.AndroidPlatform;
 public class MainActivity extends AppCompatActivity implements FragmentManager.OnBackStackChangedListener {
     NotificationManagerCompat notificationManagerCompat;
     Notification notification;
+    String prevStarted = "yes";
+
+    Button contButton;
+    EditText userName;
+    EditText userWeight;
+    EditText userActivity;
+
+    ImageView logoImage;
+
+    private boolean isFirstLaunch = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,15 +50,15 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportFragmentManager().addOnBackStackChangedListener(this);
+        contButton = findViewById(R.id.contButton);
+        userName = findViewById(R.id.EnterUserName);
+        userActivity = findViewById(R.id.EnterUserActivity);
+        userWeight = findViewById(R.id.EnterUserWeight);
+        logoImage = findViewById(R.id.imageView);
+
+
         if (ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ){
             ActivityCompat.requestPermissions(MainActivity.this,new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},0);
-        }
-
-        if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
-        }
-        else {
-            onBackStackChanged();
         }
 
         if (! Python.isStarted()) {
@@ -52,7 +70,46 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
             NotificationManager manager = getSystemService(NotificationManager.class);
             manager.createNotificationChannel(channel);
         }
+        contButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (isFirstLaunch) {
+                    SharedPreferences sharedpreferences = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedpreferences.edit();
+                    editor.putBoolean(prevStarted, false);
+                    isFirstLaunch = false;
+                    editor.putString("userName", userName.getText().toString());
+                    editor.putString("userWeight", userWeight.getText().toString());
+                    editor.putString("userActivity", userActivity.getText().toString());
+                    editor.apply();
+                    getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
+                    contButton.setVisibility(View.GONE);
+                    userName.setVisibility(View.GONE);
+                    userActivity.setVisibility(View.GONE);
+                    userWeight.setVisibility(View.GONE);
+                    logoImage.setVisibility(View.GONE);
 
+                    RelativeLayout rl = (RelativeLayout)findViewById(R.id.fragment);
+                    rl.setBackgroundColor(getResources().getColor(R.color.cardview_dark_background));
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        SharedPreferences sharedpreferences = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
+        isFirstLaunch = sharedpreferences.getBoolean(prevStarted, true);
+        Log.d("isFirstLaunch", String.valueOf(isFirstLaunch));
+        if (!isFirstLaunch) {
+            getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
+            contButton.setVisibility(View.GONE);
+            userName.setVisibility(View.GONE);
+            userActivity.setVisibility(View.GONE);
+            userWeight.setVisibility(View.GONE);
+            logoImage.setVisibility(View.GONE);
+        }
     }
 
 
