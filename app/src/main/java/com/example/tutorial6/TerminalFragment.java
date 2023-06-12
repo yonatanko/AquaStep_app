@@ -58,6 +58,7 @@ import com.chaquo.python.PyObject;
 import com.chaquo.python.Python;
 
 
+
 public class TerminalFragment extends Fragment implements ServiceConnection, SerialListener {
 
     private enum Connected { False, Pending, True }
@@ -207,10 +208,10 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         receiveText.setTextColor(getResources().getColor(R.color.white)); // set as default color to reduce number of spans
         pbar = view.findViewById(R.id.progressBar4);
         pbar.setMax(20);
-        SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
-        String userName = sharedPref.getString("userName", "");
-        String userWeight = sharedPref.getString("userWeight", "");
-        String userActivity = sharedPref.getString("userActivity", "");
+        String userName = MainActivity.username;
+        String userWeight = MainActivity.weight;
+        String userActivity = MainActivity.numActivity;
+        Log.d("userActivityyy", userActivity);
         Toast.makeText(getActivity(), "user name: " + userName, Toast.LENGTH_LONG).show();
         Toast.makeText(getActivity(), "weight: " + userWeight, Toast.LENGTH_LONG).show();
         Toast.makeText(getActivity(), "num activity: " + userActivity, Toast.LENGTH_LONG).show();

@@ -43,6 +43,10 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
 
     private boolean isFirstLaunch = true;
 
+    public static String username;
+    public static String weight;
+    public static String numActivity;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,12 +80,11 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
                 if (isFirstLaunch) {
                     SharedPreferences sharedpreferences = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = sharedpreferences.edit();
-                    editor.putBoolean(prevStarted, false);
+                    editor.putBoolean(prevStarted, false).apply();
                     isFirstLaunch = false;
-                    editor.putString("userName", userName.getText().toString());
-                    editor.putString("userWeight", userWeight.getText().toString());
-                    editor.putString("userActivity", userActivity.getText().toString());
-                    editor.apply();
+                    username = userName.getText().toString();
+                    weight= userWeight.getText().toString();
+                    numActivity = userActivity.getText().toString();
                     getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
                     contButton.setVisibility(View.GONE);
                     userName.setVisibility(View.GONE);
@@ -103,12 +106,15 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
         isFirstLaunch = sharedpreferences.getBoolean(prevStarted, true);
         Log.d("isFirstLaunch", String.valueOf(isFirstLaunch));
         if (!isFirstLaunch) {
+            onBackStackChanged();
             getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
             contButton.setVisibility(View.GONE);
             userName.setVisibility(View.GONE);
             userActivity.setVisibility(View.GONE);
             userWeight.setVisibility(View.GONE);
             logoImage.setVisibility(View.GONE);
+            RelativeLayout rl = (RelativeLayout)findViewById(R.id.fragment);
+            rl.setBackgroundColor(getResources().getColor(R.color.cardview_dark_background));
         }
     }
 

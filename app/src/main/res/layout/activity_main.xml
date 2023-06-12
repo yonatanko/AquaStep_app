@@ -65,7 +65,7 @@
             android:ems="10"
             android:textSize="20sp"
             android:focusable="true"
-            android:hint="How many hours do you spend on\ntraining in a week?"
+            android:hint="How many hours do you \nspend on training\nin a week?"
             android:inputType="number"
             android:textColorHint="@color/black"
             android:textColor="@color/black"/>
