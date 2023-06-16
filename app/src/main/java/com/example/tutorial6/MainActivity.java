@@ -58,7 +58,6 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
         userName = findViewById(R.id.EnterUserName);
         userActivity = findViewById(R.id.EnterUserActivity);
         userWeight = findViewById(R.id.EnterUserWeight);
-        logoImage = findViewById(R.id.imageView);
 
 
         if (ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ){
@@ -85,12 +84,20 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
                     username = userName.getText().toString();
                     weight= userWeight.getText().toString();
                     numActivity = userActivity.getText().toString();
-                    getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
+                    editor.putString("userName", username).apply();
+                    editor.putString("userWeight", weight).apply();
+                    editor.putString("numActivity", numActivity).apply();
                     contButton.setVisibility(View.GONE);
                     userName.setVisibility(View.GONE);
                     userActivity.setVisibility(View.GONE);
                     userWeight.setVisibility(View.GONE);
-                    logoImage.setVisibility(View.GONE);
+
+                    if (savedInstanceState==null){
+                        getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
+                    }
+                    else{
+                        onBackStackChanged();
+                    }
 
                     RelativeLayout rl = (RelativeLayout)findViewById(R.id.fragment);
                     rl.setBackgroundColor(getResources().getColor(R.color.cardview_dark_background));
@@ -104,15 +111,15 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
         super.onResume();
         SharedPreferences sharedpreferences = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
         isFirstLaunch = sharedpreferences.getBoolean(prevStarted, true);
-        Log.d("isFirstLaunch", String.valueOf(isFirstLaunch));
         if (!isFirstLaunch) {
-            onBackStackChanged();
+            username = sharedpreferences.getString("userName", "");
+            numActivity = sharedpreferences.getString("numActivity", "");
+            weight = sharedpreferences.getString("userWeight", "");
             getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
             contButton.setVisibility(View.GONE);
             userName.setVisibility(View.GONE);
             userActivity.setVisibility(View.GONE);
             userWeight.setVisibility(View.GONE);
-            logoImage.setVisibility(View.GONE);
             RelativeLayout rl = (RelativeLayout)findViewById(R.id.fragment);
             rl.setBackgroundColor(getResources().getColor(R.color.cardview_dark_background));
         }

@@ -1,4 +1,34 @@
 <resources>
     <string name="app_name">AquaStep</string>
     <string name="devices">Bluetooth Devices</string>
+    <string-array name="random_strings">
+        <item>Drinking enough water can help improve cognitive function and concentration.</item>
+        <item>Drinking water can help boost your metabolism and aid in weight loss.</item>
+        <item>Water is essential for the transportation of nutrients and oxygen throughout the body.</item>
+        <item>Staying hydrated can help prevent muscle cramps and improve athletic performance.</item>
+        <item>Drinking water before a meal can help reduce calorie intake and promote healthy digestion.</item>
+        <item>Water helps regulate body temperature and prevents overheating.</item>
+        <item>Dehydration can contribute to headaches and migraines.</item>
+        <item>Water is crucial for flushing out waste and toxins from the body.</item>
+        <item>Staying properly hydrated can help prevent kidney stones.</item>
+        <item>Water is necessary to produce saliva, which aids in digestion.</item>
+        <item>Water plays a vital role in joint lubrication and can help prevent joint pain.</item>
+        <item>Adequate water intake can help reduce the risk of urinary tract infections.</item>
+        <item>Water is essential for the proper functioning of the cardiovascular system.</item>
+        <item>Drinking water can help prevent hangovers by flushing out alcohol from the system.</item>
+        <item>Water is the best choice for hydration, as sugary drinks can contribute to weight gain and tooth decay.</item>
+        <item>Staying hydrated can help alleviate fatigue and improve energy levels.</item>
+        <item>Water is crucial for maintaining the balance of body fluids.</item>
+        <item>Drinking enough water can help reduce the risk of certain types of cancer, such as bladder and colon cancer.</item>
+        <item>Water is vital for the health and proper functioning of the liver.</item>
+        <item>Staying hydrated can help prevent the formation of painful kidney stones.</item>
+        <item>Water can help relieve heartburn and acid reflux symptoms.</item>
+        <item>Drinking water can help prevent and alleviate the symptoms of urinary incontinence.</item>
+        <item>Water is necessary to produce breast milk in nursing mothers.</item>
+        <item>Drinking water can help reduce the risk of developing chronic illnesses, such as diabetes and hypertension.</item>
+        <item>Water is crucial for the lubrication and cushioning of the spinal cord and other sensitive tissues.</item>
+        <item>Staying properly hydrated can help improve mood and reduce stress levels.</item>
+        <item>Water is essential for the maintenance of overall good health and well-being.</item>
+    </string-array>
+
 </resources>

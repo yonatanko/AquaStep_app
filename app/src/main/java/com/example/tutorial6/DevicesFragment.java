@@ -23,6 +23,8 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.Collections;
 
+import androidx.fragment.app.FragmentManager;
+
 public class DevicesFragment extends ListFragment {
 
     private BluetoothAdapter bluetoothAdapter;

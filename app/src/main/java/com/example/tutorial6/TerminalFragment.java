@@ -1,5 +1,4 @@
 package com.example.tutorial6;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Notification;
@@ -9,14 +8,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.text.Spannable;
-import android.text.SpannableStringBuilder;
-import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -24,105 +18,84 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ProgressBar;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.text.method.ScrollingMovementMethod;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.opencsv.CSVWriter;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
-
+import java.util.Calendar;
 import com.chaquo.python.PyObject;
 import com.chaquo.python.Python;
+import android.content.Context;
+import android.content.res.Resources;
+import java.util.Random;
 
 
 
 public class TerminalFragment extends Fragment implements ServiceConnection, SerialListener {
 
     private enum Connected { False, Pending, True }
-
     private String deviceAddress;
     private SerialService service;
-
     private TextView receiveText;
     private TextView sendText;
     private TextUtil.HexWatcher hexWatcher;
-
     private Connected connected = Connected.False;
     private boolean initialStart = true;
     private boolean hexEnabled = false;
     private boolean pendingNewline = false;
     private String newline = TextUtil.newline_crlf;
-
     ArrayList<ILineDataSet> dataSets = new ArrayList<>();
-
     LineChart mpLineChart;
     LineData data;
     LineDataSet N_lineDataSet;
-
     Boolean recording = false;
     Boolean is_first_start = false;
     Boolean is_first_reset = false;
     Boolean reset = false;
     Boolean saving = false;
     Boolean stopped = false;
-
     float t0 = 0.0f;
     float plot_t0 = 0.0f;
-
     ArrayList<Float> n_value_list = new ArrayList<>();
-
     int elements_to_avg = 10;
     int elements_to_remove = 4;
-
     ArrayList<String[]> rowsContainer = new ArrayList<>();
     float threshold = 10.1f;
     int num_of_steps = 0;
-
     float last_ten_N_avg = 0.0f;
-
     static String nameValue;
     String stepsValue;
     String activityValue;
-    RadioButton selectedBtn;
-
     Python py =  Python.getInstance();
     PyObject pyobj = py.getModule("test");
-
     NotificationManagerCompat notificationManagerCompat;
-
     Notification notification;
-
     int notificationCounter = 0;
+    int counterProgressBar = 0;
+    ProgressBar progressBar;
 
-    int counterPbar = 0;
+    TextView userNameTextView;
 
-    ProgressBar pbar;
-
-
-
+    private static final String RESOURCE_NAME = "random_strings";
+    
     /*
      * Lifecycle
      */
@@ -131,9 +104,6 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
         deviceAddress = getArguments().getString("device");
-
-
-
     }
 
     @Override
@@ -200,148 +170,51 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     /*
      * UI
      */
+    public void setBackground(int hour, String userName, View view){
+        if (hour >= 5 && hour < 12){
+            userNameTextView.setText("Good morning, " + userName);
+            view.setBackground(ContextCompat.getDrawable(getContext(), R.drawable.morning_background));
+        }
+        if(hour >= 12 && hour < 19){
+            userNameTextView.setText("Good afternoon, " + userName);
+            view.setBackground(ContextCompat.getDrawable(getContext(), R.drawable.noon_background));
+        }
+
+        if(hour >= 19 || hour < 5){
+            userNameTextView.setText("Good night, " + userName);
+            view.setBackground(ContextCompat.getDrawable(getContext(), R.drawable.night_background));
+        }
+    }
+    public String getRandomString() {
+        Resources res = getContext().getResources();
+        int resourceId = res.getIdentifier(RESOURCE_NAME, "array", getContext().getPackageName());
+        String[] strings = res.getStringArray(resourceId);
+
+        Random random = new Random();
+        int index = random.nextInt(strings.length);
+
+        return strings[index];
+    }
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.main_screen, container, false);
-        receiveText = view.findViewById(R.id.receive_text3);                       // TextView performance decreases with number of spans
+        receiveText = view.findViewById(R.id.receive_text3);
+        userNameTextView = view.findViewById(R.id.userNameText);
+        progressBar = view.findViewById(R.id.progressBar4);
+        TextView quoteText = view.findViewById(R.id.quoteText);
+
         receiveText.setText("0");
         receiveText.setTextColor(getResources().getColor(R.color.white)); // set as default color to reduce number of spans
-        pbar = view.findViewById(R.id.progressBar4);
-        pbar.setMax(20);
+        progressBar.setMax(20);
+
         String userName = MainActivity.username;
         String userWeight = MainActivity.weight;
         String userActivity = MainActivity.numActivity;
-        Log.d("userActivityyy", userActivity);
-        Toast.makeText(getActivity(), "user name: " + userName, Toast.LENGTH_LONG).show();
-        Toast.makeText(getActivity(), "weight: " + userWeight, Toast.LENGTH_LONG).show();
-        Toast.makeText(getActivity(), "num activity: " + userActivity, Toast.LENGTH_LONG).show();
 
-////        mpLineChart = (LineChart) view.findViewById(R.id.line_chart);
-//
-//        N_lineDataSet =  new LineDataSet(emptyDataValues(), "N");
-//        dataSets.add(N_lineDataSet);
-//        N_lineDataSet.setLineWidth(1.5f);
-//        N_lineDataSet.setColor(Color.RED);
-//        N_lineDataSet.setCircleColor(Color.RED);
-//
-//        data = new LineData(dataSets);
-//        mpLineChart.setData(data);
-//        mpLineChart.invalidate();
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
 
-//        Button buttonCsvShow = (Button) view.findViewById(R.id.button2);
-//        Button buttonStart = (Button) view.findViewById(R.id.StartButton);
-//        Button buttonStop = (Button) view.findViewById(R.id.StopButton);
-//        Button buttonReset = (Button) view.findViewById(R.id.ResetButton);
-//        Button buttonSave = (Button) view.findViewById(R.id.SaveButton);
-
-//        final EditText fileName = view.findViewById(R.id.EditFileName);
-//        final EditText numSteps = view.findViewById(R.id.EditNumberOfSteps);
-//        final RadioGroup activityType = view.findViewById(R.id.RadioGroup);
-
-//        buttonCsvShow.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                OpenLoadCSV();
-//            }
-//        });
-//
-//        buttonStart.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (!recording) {
-//                    recording = true;
-//                    is_first_start = true;
-//                    reset = false;
-//                    stopped = false;
-//                    num_of_steps = 0;
-//                    Toast.makeText(getActivity(), "Started recording", Toast.LENGTH_SHORT).show();
-//                }
-//                else{
-//                    Toast.makeText(getActivity(), "Can not start another record while recording!", Toast.LENGTH_SHORT).show();
-//                }
-//            }
-//        });
-//
-//        buttonStop.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (recording) {
-//                    recording = false;
-//                    stopped = true;
-//                    Toast.makeText(getActivity(), "Stopped recording", Toast.LENGTH_SHORT).show();
-//                }
-//                else{
-//                    Toast.makeText(getActivity(), "Stopped without starting!", Toast.LENGTH_SHORT).show();
-//                }
-//            }
-//        });
-//
-//        buttonSave.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (stopped){
-//                    saving = true;
-////                    nameValue = fileName.getText().toString();
-////                    stepsValue = numSteps.getText().toString();
-//                    int selectedRadioBtnID = activityType.getCheckedRadioButtonId();
-//                    if (selectedRadioBtnID != -1) {
-//                        selectedBtn = view.findViewById(selectedRadioBtnID);
-//                        activityValue = selectedBtn.getText().toString();
-//                    }
-//
-//                    reset = true;
-//                    is_first_reset = true;
-//
-//                    mpLineChart.clear();
-//                    data.clearValues();
-//                    mpLineChart = (LineChart) view.findViewById(R.id.line_chart);
-//
-//                    N_lineDataSet = new LineDataSet(emptyDataValues(), "N");
-//                    dataSets.add(N_lineDataSet);
-//                    N_lineDataSet.setLineWidth(1.5f);
-//                    N_lineDataSet.setColor(Color.RED);
-//                    N_lineDataSet.setCircleColor(Color.RED);
-//
-//                    data = new LineData(dataSets);
-//                    mpLineChart.setData(data);
-//                    mpLineChart.invalidate();
-//
-//                }
-//                else{
-//                    Toast.makeText(getActivity(), "Can not save before stopping!", Toast.LENGTH_SHORT).show();
-//                }
-//            }
-//        });
-//
-//        buttonReset.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (!recording) {
-//                    reset = true;
-//                    is_first_reset = true;
-//                    rowsContainer = new ArrayList<>();
-//                    num_of_steps = 0;
-//                    Toast.makeText(getActivity(), "Reset done", Toast.LENGTH_SHORT).show();
-//
-//                    mpLineChart.clear();
-//                    data.clearValues();
-//                    mpLineChart = (LineChart) view.findViewById(R.id.line_chart);
-//
-//                    N_lineDataSet = new LineDataSet(emptyDataValues(), "N");
-//                    dataSets.add(N_lineDataSet);
-//                    N_lineDataSet.setLineWidth(1.5f);
-//                    N_lineDataSet.setColor(Color.RED);
-//                    N_lineDataSet.setCircleColor(Color.RED);
-//
-//                    data = new LineData(dataSets);
-//                    mpLineChart.setData(data);
-//                    mpLineChart.invalidate();
-//                }
-//                else{
-//                    Toast.makeText(getActivity(), "Can not reset while recording!", Toast.LENGTH_SHORT).show();
-//                }
-//            }
-//        });
+        setBackground(hour, userName, view);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getActivity(), "myCh2")
                 .setSmallIcon(R.drawable.noification_logo)
@@ -350,6 +223,9 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
 
         notification = builder.build();
         notificationManagerCompat = NotificationManagerCompat.from(getActivity());
+
+//        Toast.makeText(getActivity(), getRandomString(), Toast.LENGTH_SHORT).show();
+        quoteText.setText(getRandomString());
 
         return view;
     }
@@ -433,8 +309,8 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
             notificationCounter+=1;
             Log.d("notification counter", String.valueOf(notificationCounter));
             if (notificationCounter % 100 == 0){
-                counterPbar+=1;
-                pbar.setProgress(counterPbar);
+                counterProgressBar+=1;
+                progressBar.setProgress(counterProgressBar);
                 notificationManagerCompat.notify(notificationCounter, notification);
             }
             String msg_to_save = msg;
@@ -543,9 +419,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
 
 
     private void status(String str) {
-        SpannableStringBuilder spn = new SpannableStringBuilder(str + '\n');
-        spn.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.colorStatusText)), 0, spn.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        receiveText.append(spn);
+        Toast.makeText(getActivity(), "Connection To Bluetooth device failed.\nTry again later.", Toast.LENGTH_SHORT).show();
     }
 
     /*
