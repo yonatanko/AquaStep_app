@@ -2,17 +2,11 @@
 <menu xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/clear"
-        android:icon="@drawable/ic_delete_white_24dp"
-        android:title="Clear"
-        app:showAsAction="always" />
-    <item
-        android:id="@+id/newline"
-        android:title="Newline"
+        android:id="@+id/EditInput"
+        android:title="Change details"
         app:showAsAction="never" />
     <item
-        android:id="@+id/hex"
-        android:title="HEX Mode"
-        android:checkable="true"
+        android:id="@+id/resetCups"
+        android:title="Reset cups"
         app:showAsAction="never" />
 </menu>

@@ -23,7 +23,12 @@ android {
             buildPython "C:/Users/yonat/AppData/Local/Programs/Python/Python310/python.exe"
             pip {
                 // A requirement specifier, with or without a version number:
-                install "numpy"}
+                install "numpy"
+                install "pandas"
+                install "scipy"
+                install "xgboost"
+                install "scikit-learn"
+            }
 
         }
 

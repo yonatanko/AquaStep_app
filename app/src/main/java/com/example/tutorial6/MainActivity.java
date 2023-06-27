@@ -11,11 +11,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -32,20 +34,24 @@ import com.chaquo.python.android.AndroidPlatform;
 public class MainActivity extends AppCompatActivity implements FragmentManager.OnBackStackChangedListener {
     NotificationManagerCompat notificationManagerCompat;
     Notification notification;
-    String prevStarted = "yes";
+    public static String prevStarted = "yes";
 
     Button contButton;
     EditText userName;
     EditText userWeight;
     EditText userActivity;
 
+    EditText userSleepingHours;
+
     ImageView logoImage;
 
-    private boolean isFirstLaunch = true;
+    public static boolean isFirstLaunch = true;
 
     public static String username;
-    public static String weight;
-    public static String numActivity;
+    public static int weight;
+    public static int numActivity;
+
+    public static int sleepingHours;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +64,10 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
         userName = findViewById(R.id.EnterUserName);
         userActivity = findViewById(R.id.EnterUserActivity);
         userWeight = findViewById(R.id.EnterUserWeight);
+        userSleepingHours = findViewById(R.id.EnterSleepingHours);
+        SharedPreferences sharedpreferences = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
+//        SharedPreferences settings = getApplicationContext().getSharedPreferences("AquaStep", Context.MODE_PRIVATE);
+//        settings.edit().clear().apply();
 
 
         if (ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ){
@@ -82,15 +92,18 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
                     editor.putBoolean(prevStarted, false).apply();
                     isFirstLaunch = false;
                     username = userName.getText().toString();
-                    weight= userWeight.getText().toString();
-                    numActivity = userActivity.getText().toString();
+                    weight = Integer.parseInt(userWeight.getText().toString());
+                    numActivity = Integer.parseInt(userActivity.getText().toString());
+                    sleepingHours = Integer.parseInt(userSleepingHours.getText().toString());
                     editor.putString("userName", username).apply();
-                    editor.putString("userWeight", weight).apply();
-                    editor.putString("numActivity", numActivity).apply();
+                    editor.putInt("userWeight", weight).apply();
+                    editor.putInt("numActivity", numActivity).apply();
+                    editor.putInt("sleepingHours", sleepingHours).apply();
                     contButton.setVisibility(View.GONE);
                     userName.setVisibility(View.GONE);
                     userActivity.setVisibility(View.GONE);
                     userWeight.setVisibility(View.GONE);
+                    userSleepingHours.setVisibility(View.GONE);
 
                     if (savedInstanceState==null){
                         getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
@@ -113,18 +126,24 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
         isFirstLaunch = sharedpreferences.getBoolean(prevStarted, true);
         if (!isFirstLaunch) {
             username = sharedpreferences.getString("userName", "");
-            numActivity = sharedpreferences.getString("numActivity", "");
-            weight = sharedpreferences.getString("userWeight", "");
-            getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
+            numActivity = sharedpreferences.getInt("numActivity", 0);
+            weight = sharedpreferences.getInt("userWeight", 0);
+            sleepingHours = sharedpreferences.getInt("sleepingHours", sleepingHours);
+
+            DevicesFragment devicesFragment = (DevicesFragment) getSupportFragmentManager().findFragmentByTag("devices");
+            if (devicesFragment == null) {
+                getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
+            }
+
             contButton.setVisibility(View.GONE);
             userName.setVisibility(View.GONE);
             userActivity.setVisibility(View.GONE);
             userWeight.setVisibility(View.GONE);
-            RelativeLayout rl = (RelativeLayout)findViewById(R.id.fragment);
+            userSleepingHours.setVisibility(View.GONE);
+            RelativeLayout rl = (RelativeLayout) findViewById(R.id.fragment);
             rl.setBackgroundColor(getResources().getColor(R.color.cardview_dark_background));
         }
     }
-
 
     @Override
     public void onBackStackChanged() {

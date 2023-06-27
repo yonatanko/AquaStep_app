@@ -13,6 +13,7 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -22,9 +23,21 @@ import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
+import com.chaquo.python.PyObject;
+import com.chaquo.python.Python;
+import com.opencsv.CSVWriter;
+
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
+
+import java.io.FileWriter;
+
+
 
 /**
  * create notification and queue serial data while activity is not in the foreground
@@ -60,6 +73,15 @@ public class SerialService extends Service implements SerialListener {
 
     int counter;
 
+    private final ArrayList<String[]> rowsContainer;
+
+    private boolean isFirstInFiveMinutes = true;
+
+    Python py =  Python.getInstance();
+    PyObject pyobj = py.getModule("main");
+
+    private static final String file_path = "/sdcard/csv_dir/data.csv";
+
     /**
      * Lifecylce
      */
@@ -68,6 +90,7 @@ public class SerialService extends Service implements SerialListener {
         binder = new SerialBinder();
         queue1 = new LinkedList<>();
         queue2 = new LinkedList<>();
+        rowsContainer = new ArrayList<>();
     }
 
     @Override
@@ -134,6 +157,7 @@ public class SerialService extends Service implements SerialListener {
         }
         queue1.clear();
         queue2.clear();
+        rowsContainer.clear();
     }
 
     public void detach() {
@@ -185,15 +209,8 @@ public class SerialService extends Service implements SerialListener {
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
         counter += 1;
-        if (counter % 100 == 0)
-            notificationManager.notify(counter, notification);
+        notificationManager.notify(counter, notification);
     }
-
-
-
-
-
-
 
     private void cancelNotification() {
         stopForeground(true);
@@ -243,10 +260,11 @@ public class SerialService extends Service implements SerialListener {
     }
 
     public void onSerialRead(byte[] data) {
-        if(connected) {
+        if (connected) {
             synchronized (this) {
                 if (listener != null) {
                     mainLooper.post(() -> {
+                        Log.d("queue1", new String(data));
                         if (listener != null) {
                             listener.onSerialRead(data);
                         } else {
@@ -255,13 +273,49 @@ public class SerialService extends Service implements SerialListener {
                         }
                     });
                 } else {
-                    queue2.add(new QueueItem(QueueType.Read, data, null));
+//                    queue2.add(new QueueItem(QueueType.Read, data, null));
                     Log.d("queue2", new String(data));
-                    createPushNotification();
+                    String[] parts = new String(data).split(",");
+                    parts = clean_str(parts);
+                    String currentCsv = "/sdcard/csv_dir/data.csv";
+                    try {
+                        CSVWriter csvWriter = new CSVWriter(new FileWriter(currentCsv, true));
+                        if (parts.length == 5)
+                        {
+                            try{
+                                float x = Float.parseFloat(parts[0]);
+                                float y = Float.parseFloat(parts[1]);
+                                float z = Float.parseFloat(parts[2]);
+                                String[] row = {parts[0], parts[1], parts[2]};
+                                csvWriter.writeNext(row);
+                                csvWriter.close();
+                            }
+                            catch (NumberFormatException e){Log.d("NumberFormatException", "NumberFormatException");}
+                            int time = (int) Math.floor(Float.parseFloat(parts[3]));
+                            if (time % 5 == 0 && isFirstInFiveMinutes){
+                                isFirstInFiveMinutes = false;
+                                TerminalFragment.calculatedCups += TerminalFragment.baselineInterval + TerminalFragment.residualCups;
+                                Log.d("calculatedCups", String.valueOf(TerminalFragment.calculatedCups));
+                                PyObject obj = pyobj.callAttr("get_preds" , file_path);
+                                int activity = obj.asList().get(0).toInt();
+                                int steps = obj.asList().get(1).toInt();
+                                Log.d("blabla", "hello");
+                                // empty the csv file
+                                clearCsvFile();
+                            }
+                            else if (time % 5 != 0){
+                                isFirstInFiveMinutes = true;
+                            }
+                        }
+                    }
+                    catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
     }
+
 
     public void onSerialIoError(Exception e) {
         if(connected) {
@@ -284,5 +338,43 @@ public class SerialService extends Service implements SerialListener {
             }
         }
     }
+
+    public String[] clean_str(String[] stringsArr){
+        for (int i = 0; i < stringsArr.length; i++)  {
+            stringsArr[i]=stringsArr[i].replaceAll(" ","");
+        }
+
+        return stringsArr;
+    }
+
+    private void writeToCsv() {
+        try {
+            String currentCsv = "/sdcard/csv_dir/try2.csv";
+            CSVWriter csvWriter = new CSVWriter(new FileWriter(currentCsv, true));
+            for (String[] row : rowsContainer) {
+                csvWriter.writeNext(row);
+            }
+            csvWriter.close();
+            rowsContainer.clear();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void clearCsvFile() {
+        String csvFile = Environment.getExternalStorageDirectory() + "/csv_dir/data.csv";
+
+        File file = new File(csvFile);
+        if (file.exists()) {
+            file.delete();
+        }
+
+        try {
+            file.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 }

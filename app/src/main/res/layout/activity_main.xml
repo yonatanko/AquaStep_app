@@ -15,7 +15,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/lightBlue" />
+            android:background="@null"/>
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -31,7 +31,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="65dp"
-            android:layout_marginTop="288dp"
+            android:layout_marginTop="275dp"
             android:layout_marginBottom="50dp"
             android:focusable="true"
             android:hint="Enter Your First name"
@@ -46,11 +46,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="65dp"
-            android:layout_marginTop="332dp"
+            android:layout_marginTop="320dp"
             android:layout_marginBottom="50dp"
             android:ems="10"
             android:focusable="true"
-            android:hint="Enter Your weight"
+            android:hint="Enter Your weight in kg"
             android:inputType="number"
             android:textColor="@color/black"
             android:textColorHint="@color/black"
@@ -58,11 +58,25 @@
             android:background="@null"/>
 
         <EditText
+            android:id="@+id/EnterSleepingHours"
+            android:layout_width="250dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="67dp"
+            android:layout_marginTop="368dp"
+            android:focusable="true"
+            android:hint="Enter your Avg. sleeping hours"
+            android:inputType="number"
+            android:textColor="@color/black"
+            android:textColorHint="@color/black"
+            android:textSize="12sp"
+            android:background="@null"/>
+
+        <EditText
             android:id="@+id/EnterUserActivity"
             android:layout_width="250dp"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="65dp"
-            android:layout_marginTop="380dp"
+            android:layout_marginLeft="67dp"
+            android:layout_marginTop="415dp"
             android:focusable="true"
             android:hint="How many hours do you spend on training in a week?"
             android:inputType="number"

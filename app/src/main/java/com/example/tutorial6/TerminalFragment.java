@@ -8,6 +8,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -29,6 +31,7 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.MarkerImage;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
@@ -48,32 +51,21 @@ import android.content.res.Resources;
 import java.util.Random;
 
 
-
 public class TerminalFragment extends Fragment implements ServiceConnection, SerialListener {
 
     private enum Connected { False, Pending, True }
     private String deviceAddress;
     private SerialService service;
-    private TextView receiveText;
-    private TextView sendText;
+    private TextView drankCups;
+    private TextView temperatureText;
+    private TextView caloriesText;
     private TextUtil.HexWatcher hexWatcher;
     private Connected connected = Connected.False;
     private boolean initialStart = true;
     private boolean hexEnabled = false;
     private boolean pendingNewline = false;
     private String newline = TextUtil.newline_crlf;
-    ArrayList<ILineDataSet> dataSets = new ArrayList<>();
-    LineChart mpLineChart;
-    LineData data;
-    LineDataSet N_lineDataSet;
-    Boolean recording = false;
-    Boolean is_first_start = false;
-    Boolean is_first_reset = false;
-    Boolean reset = false;
-    Boolean saving = false;
-    Boolean stopped = false;
-    float t0 = 0.0f;
-    float plot_t0 = 0.0f;
+
     ArrayList<Float> n_value_list = new ArrayList<>();
     int elements_to_avg = 10;
     int elements_to_remove = 4;
@@ -81,20 +73,43 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     float threshold = 10.1f;
     int num_of_steps = 0;
     float last_ten_N_avg = 0.0f;
-    static String nameValue;
-    String stepsValue;
-    String activityValue;
     Python py =  Python.getInstance();
-    PyObject pyobj = py.getModule("test");
+    PyObject pyobj = py.getModule("main");
     NotificationManagerCompat notificationManagerCompat;
     Notification notification;
-    int notificationCounter = 0;
-    int counterProgressBar = 0;
+    public int notificationCounter = 0;
+    float counterProgressBar = 0.0f;
     ProgressBar progressBar;
-
     TextView userNameTextView;
 
     private static final String RESOURCE_NAME = "random_strings";
+
+    private SharedPreferences sharedpreferences;
+
+    public int dailyTarget = 0;
+
+    private int temperature;
+
+    private boolean isFirstTemp = true;
+    private boolean isFirstInFiveMinutes = true;
+
+    public static float baselineInterval;
+
+    private int intervalMinutes = 5;
+
+    public static float residualCups = 0;
+
+    private int fullCups = 0;
+
+    public static float calculatedCups = 0.0f;
+
+    private static final String SHARED_PREFS_NAME = "MyPrefs";
+    private static final String KEY_NOTIFICATION_COUNTER = "notification_counter";
+    private static final String KEY_COUNTER_PROGRESS_BAR = "counter_progress_bar";
+    private static final String KEY_TEMPERATURE = "temperature";
+
+    private static final String file_path = "/sdcard/csv_dir/data.csv";
+    
     
     /*
      * Lifecycle
@@ -102,8 +117,11 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
         setRetainInstance(true);
         deviceAddress = getArguments().getString("device");
+        // Obtain the SharedPreferences object from the activity
+       sharedpreferences = requireActivity().getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
     }
 
     @Override
@@ -111,6 +129,12 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         if (connected != Connected.False)
             disconnect();
         getActivity().stopService(new Intent(getActivity(), SerialService.class));
+        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt(KEY_NOTIFICATION_COUNTER, notificationCounter);
+        editor.putFloat(KEY_COUNTER_PROGRESS_BAR, counterProgressBar);
+        editor.putInt(KEY_TEMPERATURE, temperature);
+        editor.apply();
         super.onDestroy();
     }
 
@@ -199,18 +223,27 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.main_screen, container, false);
-        receiveText = view.findViewById(R.id.receive_text3);
+        drankCups = view.findViewById(R.id.drankCups);
         userNameTextView = view.findViewById(R.id.userNameText);
         progressBar = view.findViewById(R.id.progressBar4);
         TextView quoteText = view.findViewById(R.id.quoteText);
+        temperatureText = view.findViewById(R.id.temperature_text);
+        caloriesText = view.findViewById(R.id.calories_text);
+        isFirstTemp = true;
 
-        receiveText.setText("0");
-        receiveText.setTextColor(getResources().getColor(R.color.white)); // set as default color to reduce number of spans
-        progressBar.setMax(20);
+        drankCups.setText("0" + "/" + dailyTarget);
+        drankCups.setTextColor(getResources().getColor(R.color.white)); // set as default color to reduce number of spans
 
         String userName = MainActivity.username;
-        String userWeight = MainActivity.weight;
-        String userActivity = MainActivity.numActivity;
+        int userWeight = MainActivity.weight;
+        int userActivity = MainActivity.numActivity;
+        int userSleepingHours = MainActivity.sleepingHours;
+
+        dailyTarget = ounceToCups(userWeight*2.205*(1/2.0) + userActivity*60/210.0*12);
+        float numIntervals = Math.round((24-userSleepingHours)*60.0/intervalMinutes);
+        baselineInterval = dailyTarget/numIntervals;
+        Log.d("baselineInterval", String.valueOf(baselineInterval) + ", " + String.valueOf(numIntervals) + ", " + String.valueOf(dailyTarget));
+        progressBar.setMax(dailyTarget);
 
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
 
@@ -218,14 +251,21 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getActivity(), "myCh2")
                 .setSmallIcon(R.drawable.noification_logo)
-                .setContentTitle("First Notfication")
-                .setContentText("Hello");
+                .setContentTitle("Drinking Time")
+                .setContentText("Time to drink " + String.valueOf(calculatedCups) + " cups");
 
         notification = builder.build();
         notificationManagerCompat = NotificationManagerCompat.from(getActivity());
 
-//        Toast.makeText(getActivity(), getRandomString(), Toast.LENGTH_SHORT).show();
         quoteText.setText(getRandomString());
+
+        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
+        notificationCounter = sharedPreferences.getInt(KEY_NOTIFICATION_COUNTER, 0);
+        counterProgressBar = sharedPreferences.getFloat(KEY_COUNTER_PROGRESS_BAR, 0.0f);
+        temperature = sharedPreferences.getInt(KEY_TEMPERATURE, 25);
+        progressBar.setProgress((int) Math.floor(counterProgressBar));
+        drankCups.setText(String.valueOf((int) Math.floor(counterProgressBar)) + "/" + dailyTarget);
+        temperatureText.setText("Current temperature\n\n" + String.valueOf(temperature) + " \u2103");
 
         return view;
     }
@@ -233,43 +273,49 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.menu_terminal, menu);
-        menu.findItem(R.id.hex).setChecked(hexEnabled);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.clear) {
-            receiveText.setText("0");
-            return true;
-        } else if (id == R.id.newline) {
-            String[] newlineNames = getResources().getStringArray(R.array.newline_names);
-            String[] newlineValues = getResources().getStringArray(R.array.newline_values);
-            int pos = java.util.Arrays.asList(newlineValues).indexOf(newline);
-            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-            builder.setTitle("Newline");
-            builder.setSingleChoiceItems(newlineNames, pos, (dialog, item1) -> {
-                newline = newlineValues[item1];
-                dialog.dismiss();
-            });
-            builder.create().show();
-            return true;
-        } else if (id == R.id.hex) {
-            hexEnabled = !hexEnabled;
-            sendText.setText("");
-            hexWatcher.enable(hexEnabled);
-            sendText.setHint(hexEnabled ? "HEX mode" : "");
-            item.setChecked(hexEnabled);
+        if (id == R.id.EditInput) {
+            // Reset the isFirstLaunch flag to true
+            SharedPreferences.Editor editor = sharedpreferences.edit();
+            editor.putBoolean(MainActivity.prevStarted, true).apply();
+
+            // Clear the saved user data
+            editor.remove("userName").apply();
+            editor.remove("userWeight").apply();
+            editor.remove("numActivity").apply();
+
+            // Restart the activity
+            Intent intent = requireActivity().getIntent();
+            requireActivity().finish();
+            startActivity(intent);
+
             return true;
         } else {
-            return super.onOptionsItemSelected(item);
+            if (id == R.id.resetCups){
+                notificationCounter = 0;
+                counterProgressBar = 0.0f;
+                progressBar.setProgress(0);
+                SharedPreferences.Editor editor = sharedpreferences.edit();
+                editor.putInt(KEY_NOTIFICATION_COUNTER, 0);
+                editor.putFloat(KEY_COUNTER_PROGRESS_BAR, 0);
+                editor.putInt(KEY_TEMPERATURE, temperature);
+                editor.apply();
+                drankCups.setText("0" + "/" + dailyTarget);
+                return true;
+            }
+            else
+                return super.onOptionsItemSelected(item);
         }
     }
 
     /*
      * Serial + UI
      */
-    private String[] clean_str(String[] stringsArr){
+    public static String[] clean_str(String[] stringsArr){
         for (int i = 0; i < stringsArr.length; i++)  {
             stringsArr[i]=stringsArr[i].replaceAll(" ","");
         }
@@ -306,115 +352,85 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         String msg = new String(message);
         Log.d("message", msg);
         if(newline.equals(TextUtil.newline_crlf) && msg.length() > 0) {
-            notificationCounter+=1;
-            Log.d("notification counter", String.valueOf(notificationCounter));
-            if (notificationCounter % 100 == 0){
-                counterProgressBar+=1;
-                progressBar.setProgress(counterProgressBar);
-                notificationManagerCompat.notify(notificationCounter, notification);
-            }
-            String msg_to_save = msg;
-            msg_to_save = msg.replace(TextUtil.newline_crlf, TextUtil.emptyString);
+            String msg_to_save = msg.replace(TextUtil.newline_crlf, TextUtil.emptyString);
             if (msg_to_save.length() > 1){
-                String[] parts = msg_to_save.split(",");
-                parts = clean_str(parts);
-                parts[3] = String.valueOf(Integer.parseInt(parts[3])/1000.0);
+                String[] parts = clean_str(msg_to_save.split(","));
 
-                try {
-                    File file = new File("/sdcard/csv_dir/");
-                    file.mkdirs();
-
-                    float x = Float.parseFloat(parts[0]);
-                    float y = Float.parseFloat(parts[1]);
-                    float z = Float.parseFloat(parts[2]);
-                    PyObject obj = pyobj.callAttr("main", x,y,z);
-                    float n_value = obj.toFloat();
-                    n_value_list.add(n_value);
-                    Log.d("size", String.valueOf(n_value_list.size()));
-
-
-                    // Parse the string values: parts[0], parts[1], parts[2] are floats, and parts[3] is an integer
-                    if (recording) {
-                        float latest_t =  Float.parseFloat(parts[3]);
-                        if (is_first_start)
-                        {
-                            t0 = latest_t;
-                            is_first_start = false;
-                        }
-                        float actual_t = latest_t - t0;
-                        String row[] = new String[]{String.valueOf(actual_t), parts[0], parts[1], parts[2]};
-                        rowsContainer.add(row);
+                // Saving to CSV
+                try{
+                    CSVWriter csvWriter = new CSVWriter(new FileWriter(file_path, true));
+                    try{
+                        float x = Float.parseFloat(parts[0]);
+                        float y = Float.parseFloat(parts[1]);
+                        float z = Float.parseFloat(parts[2]);
+                        String[] row = {parts[0], parts[1], parts[2]};
+                        csvWriter.writeNext(row);
+                        csvWriter.close();
                     }
-
-                    if (reset) {
-                        if (is_first_reset)
-                        {
-                            plot_t0 = Float.parseFloat(parts[3]);
-                            is_first_reset = false;
-                        }
-                        if (!saving) {num_of_steps = 0;}
-                        reset = false;
-                    }
-
-                    if (saving) {
-                        if (nameValue.length() > 0 && activityValue != null && stepsValue.length() > 0) {
-                            String currentCsv = "/sdcard/csv_dir/" + nameValue + ".csv";
-                            CSVWriter csvWriter = new CSVWriter(new FileWriter(currentCsv,true));
-                            String name_row[] = new String[]{"NAME:", nameValue + ".csv", "", ""};
-                            csvWriter.writeNext(name_row);
-                            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy hh:mm");
-                            String date = LocalDateTime.now().format(formatter);
-                            String date_row[] = new String[]{"EXPERIMENT TIME:", date, "", ""};
-                            csvWriter.writeNext(date_row);
-                            String activity_row[] = new String[]{"ACTIVITY TYPE:", activityValue, "", ""};
-                            csvWriter.writeNext(activity_row);
-                            String steps_row[] = new String[]{"COUNT OF ACTUAL STEPS: ", stepsValue, "", ""};
-                            csvWriter.writeNext(steps_row);
-                            String estimates_steps_row[] = new String[]{"ESTIMATED NUMBER OF STEPS: ", String.valueOf(num_of_steps), "", ""};
-                            csvWriter.writeNext(estimates_steps_row);
-                            String empty_row[] = new String[]{"", "", "", ""};
-                            csvWriter.writeNext(empty_row);
-                            String header_row[] = new String[]{"Time [sec]", "ACC X", "ACC Y", "ACC Z"};
-                            csvWriter.writeNext(header_row);
-                            writeToCsv(rowsContainer, csvWriter);
-                            csvWriter.close();
-                            Toast.makeText(getActivity(), "Saved the record", Toast.LENGTH_SHORT).show();
-
-                            num_of_steps = 0;
-                        }
-                        else {
-                            Toast.makeText(getActivity(), "Haven't filled out all the inputs! Record failed!", Toast.LENGTH_SHORT).show();
-                        }
-                        rowsContainer = new ArrayList<String[]>();
-                        saving = false;
-                    }
-                    if (n_value_list.size() == elements_to_avg) {
-                        float sum = 0.0f;
-                        for(int i = 0; i < elements_to_avg; i++)
-                            sum += n_value_list.get(i);
-                        last_ten_N_avg = sum / elements_to_avg;
-                        Log.d("avg is", String.valueOf(last_ten_N_avg));
-
-                        if (last_ten_N_avg > threshold) {
-                            num_of_steps++;
-                        }
-                        n_value_list.subList(0, elements_to_remove).clear();
-                        Log.d("size", String.valueOf(n_value_list.size()));
-                        data.addEntry(new Entry(Float.parseFloat(parts[3]) - plot_t0, last_ten_N_avg), 0);
-                        N_lineDataSet.notifyDataSetChanged(); // let the data know a dataSet changed
-                        mpLineChart.notifyDataSetChanged(); // let the chart know it's data changed
-                        mpLineChart.invalidate(); // refresh
-                    }
-
-                    String text_to_show = String.valueOf(notificationCounter/100);
-                    receiveText.setText(text_to_show);
-
+                    catch (NumberFormatException e){Log.d("NumberFormatException", "NumberFormatException");}
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
 
+                int time = (int) Math.round((Float.parseFloat(parts[3])/1000.0));
+
+                float f_temperature = Float.parseFloat(parts[4]);
+                temperature = Math.round(f_temperature);
+                if (isFirstTemp){
+                    temperatureText.setText("Current temperature\n\n" + String.valueOf(temperature)+ " \u2103");
+                    isFirstTemp = false;
+                }
+                if (time % 2 == 0 && isFirstInFiveMinutes){
+                    isFirstInFiveMinutes = false;
+                    temperatureText.setText("Current temperature\n\n" + String.valueOf(temperature)+ " \u2103");
+                    PyObject obj = pyobj.callAttr("get_preds" , file_path);
+                    int activity = obj.asList().get(0).toInt();
+                    int steps = obj.asList().get(1).toInt();
+                    Log.d("blabla", String.valueOf(activity) + ", " + String.valueOf(steps));
+                    calculatedCups += baselineInterval + residualCups;
+                    Log.d("calculatedCups", String.valueOf(calculatedCups));
+                    counterProgressBar += baselineInterval + residualCups;
+                    if ((int) Math.floor(calculatedCups) >= 1){
+                        residualCups = calculatedCups - (float)Math.floor(calculatedCups);
+                        startNotification((int)Math.floor(calculatedCups), notificationCounter);
+                        drankCups.setText((int)Math.floor(counterProgressBar) + "/" + dailyTarget);
+                        progressBar.setProgress((int) Math.floor(counterProgressBar));
+                        calculatedCups = 0;
+                    }
+                }
+                if (time % 2 != 0)
+                    isFirstInFiveMinutes = true;
+//                PyObject obj = pyobj.callAttr("main", x,y,z);
+//                float n_value = obj.toFloat();
+//                n_value_list.add(n_value);
+//                Log.d("size", String.valueOf(n_value_list.size()));
+//
+//                if (n_value_list.size() == elements_to_avg) {
+//                    float sum = 0.0f;
+//                    for(int i = 0; i < elements_to_avg; i++)
+//                        sum += n_value_list.get(i);
+//                    last_ten_N_avg = sum / elements_to_avg;
+//                    Log.d("avg is", String.valueOf(last_ten_N_avg));
+//
+//                    if (last_ten_N_avg > threshold) {
+//                        num_of_steps++;
+//                    }
+//                    n_value_list.subList(0, elements_to_remove).clear();
+                Log.d("size", String.valueOf(n_value_list.size()));
+//                }
             }
         }
+    }
+
+    private void startNotification(int numCups, int notificationCounter){
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(getActivity(), "myCh2")
+                .setSmallIcon(R.drawable.noification_logo)
+                .setContentTitle("Drinking Time")
+                .setContentText("Time to drink " + String.valueOf(numCups) + " cups");
+
+        notification = builder.build();
+        notificationManagerCompat = NotificationManagerCompat.from(getActivity());
+        notificationManagerCompat.notify(notificationCounter, notification);
     }
 
 
@@ -462,6 +478,10 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     private void OpenLoadCSV(){
         Intent intent = new Intent(getContext(),LoadCSV.class);
         startActivity(intent);
+    }
+
+    public static int ounceToCups(double ounces) {
+        return (int) Math.round(ounces * 0.125);
     }
 
 }
