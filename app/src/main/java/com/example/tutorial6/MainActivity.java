@@ -15,7 +15,10 @@ import android.view.animation.AlphaAnimation;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.ActivityCompat;
@@ -43,7 +46,7 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
 
     EditText userSleepingHours;
 
-    ImageView logoImage;
+    RadioGroup genderRadioGroup;
 
     public static boolean isFirstLaunch = true;
 
@@ -53,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
 
     public static int sleepingHours;
 
+    public static String gender;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -65,9 +69,10 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
         userActivity = findViewById(R.id.EnterUserActivity);
         userWeight = findViewById(R.id.EnterUserWeight);
         userSleepingHours = findViewById(R.id.EnterSleepingHours);
-        SharedPreferences sharedpreferences = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
-//        SharedPreferences settings = getApplicationContext().getSharedPreferences("AquaStep", Context.MODE_PRIVATE);
-//        settings.edit().clear().apply();
+        genderRadioGroup = findViewById(R.id.genderRadioGroup);
+//        SharedPreferences sharedpreferences = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
+////        SharedPreferences settings = getApplicationContext().getSharedPreferences("AquaStep", Context.MODE_PRIVATE);
+////        settings.edit().clear().apply();
 
 
         if (ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ){
@@ -87,33 +92,55 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
             @Override
             public void onClick(View v) {
                 if (isFirstLaunch) {
-                    SharedPreferences sharedpreferences = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedpreferences.edit();
-                    editor.putBoolean(prevStarted, false).apply();
-                    isFirstLaunch = false;
-                    username = userName.getText().toString();
-                    weight = Integer.parseInt(userWeight.getText().toString());
-                    numActivity = Integer.parseInt(userActivity.getText().toString());
-                    sleepingHours = Integer.parseInt(userSleepingHours.getText().toString());
-                    editor.putString("userName", username).apply();
-                    editor.putInt("userWeight", weight).apply();
-                    editor.putInt("numActivity", numActivity).apply();
-                    editor.putInt("sleepingHours", sleepingHours).apply();
-                    contButton.setVisibility(View.GONE);
-                    userName.setVisibility(View.GONE);
-                    userActivity.setVisibility(View.GONE);
-                    userWeight.setVisibility(View.GONE);
-                    userSleepingHours.setVisibility(View.GONE);
-
-                    if (savedInstanceState==null){
-                        getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
+                    if (userName.getText().toString().equals("") || userActivity.getText().toString().equals("") || userWeight.getText().toString().equals("") || userSleepingHours.getText().toString().equals("")) {
+                        AlphaAnimation animation1 = new AlphaAnimation(0.2f, 1.0f);
+                        animation1.setDuration(1500);
+                        animation1.setStartOffset(500);
+                        animation1.setFillAfter(true);
+                        userName.startAnimation(animation1);
+                        userActivity.startAnimation(animation1);
+                        userWeight.startAnimation(animation1);
+                        userSleepingHours.startAnimation(animation1);
+                        genderRadioGroup.startAnimation(animation1);
+                        Toast.makeText(getApplicationContext(), "Please Fill All the Fields", Toast.LENGTH_SHORT).show();
                     }
                     else{
-                        onBackStackChanged();
-                    }
+                        SharedPreferences sharedpreferences = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sharedpreferences.edit();
+                        editor.putBoolean(prevStarted, false).apply();
+                        isFirstLaunch = false;
+                        username = userName.getText().toString();
+                        weight = Integer.parseInt(userWeight.getText().toString());
+                        numActivity = Integer.parseInt(userActivity.getText().toString());
+                        sleepingHours = Integer.parseInt(userSleepingHours.getText().toString());
+                        int selectedRadioBtnID = genderRadioGroup.getCheckedRadioButtonId();
+                        if (selectedRadioBtnID != -1) {
+                            RadioButton selectedBtn = findViewById(selectedRadioBtnID);
+                            gender = selectedBtn.getText().toString();
+                        }
+                        editor.putString("userName", username).apply();
+                        editor.putInt("userWeight", weight).apply();
+                        editor.putInt("numActivity", numActivity).apply();
+                        editor.putInt("sleepingHours", sleepingHours).apply();
+                        editor.putString("userGender", gender).apply();
+                        contButton.setVisibility(View.GONE);
+                        userName.setVisibility(View.GONE);
+                        userActivity.setVisibility(View.GONE);
+                        userWeight.setVisibility(View.GONE);
+                        userSleepingHours.setVisibility(View.GONE);
+                        genderRadioGroup.setVisibility(View.GONE);
 
-                    RelativeLayout rl = (RelativeLayout)findViewById(R.id.fragment);
-                    rl.setBackgroundColor(getResources().getColor(R.color.cardview_dark_background));
+                        if (savedInstanceState==null){
+                            getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
+                        }
+                        else{
+                            onBackStackChanged();
+                        }
+
+                        RelativeLayout rl = (RelativeLayout)findViewById(R.id.fragment);
+                        rl.setBackgroundColor(getResources().getColor(R.color.cardview_dark_background));
+
+                    }
                 }
             }
         });

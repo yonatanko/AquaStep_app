@@ -3,7 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/listDivider"
+    android:background="#DF366CAE"
     android:orientation="vertical">
 
     <TextView
@@ -12,6 +12,6 @@
         android:layout_marginTop="12dp"
         android:layout_marginBottom="12dp"
         android:gravity="center"
-        android:text="Choose your device"
+        android:text="Choose Bluetooth device"
         android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 </LinearLayout>

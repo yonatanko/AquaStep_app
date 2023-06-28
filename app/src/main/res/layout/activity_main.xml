@@ -15,7 +15,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@null"/>
+            android:background="@color/waterBlue"/>
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -31,10 +31,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="65dp"
-            android:layout_marginTop="275dp"
-            android:layout_marginBottom="50dp"
+            android:layout_marginTop="240dp"
             android:focusable="true"
-            android:hint="Enter Your First name"
+            android:hint="First Name"
             android:inputType="textPersonName"
             android:textColor="@color/black"
             android:textColorHint="@color/black"
@@ -46,11 +45,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="65dp"
-            android:layout_marginTop="320dp"
+            android:layout_marginTop="285dp"
             android:layout_marginBottom="50dp"
             android:ems="10"
             android:focusable="true"
-            android:hint="Enter Your weight in kg"
+            android:hint="Weight in Kg"
             android:inputType="number"
             android:textColor="@color/black"
             android:textColorHint="@color/black"
@@ -62,13 +61,13 @@
             android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:layout_marginLeft="67dp"
-            android:layout_marginTop="368dp"
+            android:layout_marginTop="333dp"
             android:focusable="true"
-            android:hint="Enter your Avg. sleeping hours"
+            android:hint="Avg. Sleeping Hours"
             android:inputType="number"
             android:textColor="@color/black"
             android:textColorHint="@color/black"
-            android:textSize="12sp"
+            android:textSize="15sp"
             android:background="@null"/>
 
         <EditText
@@ -76,24 +75,61 @@
             android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:layout_marginLeft="67dp"
-            android:layout_marginTop="415dp"
+            android:layout_marginTop="380dp"
             android:focusable="true"
-            android:hint="How many hours do you spend on training in a week?"
+            android:hint="Weekly Training Hours"
             android:inputType="number"
             android:textColor="@color/black"
             android:textColorHint="@color/black"
-            android:textSize="10sp"
+            android:textSize="15sp"
             android:background="@null"/>
+
+        <RadioGroup
+            android:id="@+id/genderRadioGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="410dp"
+            android:layout_marginLeft="65dp">
+
+            <TextView
+                android:layout_width="70dp"
+                android:layout_height="60dp"
+                android:text="Gender:"
+                android:textColor="@color/black" />
+
+            <RadioButton
+                android:id="@+id/RunningButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Male"
+                android:textColor="@color/black"
+                android:buttonTint="@color/black"
+                android:scaleX="0.8"
+                android:scaleY="0.8"/>
+
+            <RadioButton
+                android:id="@+id/WalkingButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Female"
+                android:textColor="@color/black"
+                android:buttonTint="@color/black"
+                android:scaleX="0.8"
+                android:scaleY="0.8"/>
+        </RadioGroup>
 
         <Button
             android:id="@+id/contButton"
             android:layout_width="200dp"
-            android:layout_height="30dp"
+            android:layout_height="60dp"
             android:layout_centerHorizontal="true"
-            android:layout_marginTop="460dp"
-            android:background="@null"
-            android:textSize="20sp" />
-
+            android:layout_marginTop="472dp"
+            android:textSize="20sp"
+            android:text="Continue"
+            android:textColor="#49688C"
+            android:background="@drawable/rounded_button"
+            android:textStyle="bold" />
 
     </RelativeLayout>
 

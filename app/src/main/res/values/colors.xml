@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#3aa8c1</color>
-    <color name="colorPrimaryDark">#257C8F</color>
+    <color name="colorPrimary">#A33C78C1</color>
+    <color name="colorPrimaryDark">#A33C78C1</color>
     <color name="colorAccent">#ff6e40</color>
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
@@ -11,6 +11,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="lightBlue">#3aa8c1</color>
+    <color name="waterBlue">#A33C78C1</color>
 
     <color name="colorRecieveText">#00FF00</color>
     <color name="colorSendText">#82CAFF</color>
