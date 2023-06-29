@@ -8,6 +8,7 @@ import android.app.Service;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -287,23 +288,39 @@ public class SerialService extends Service implements SerialListener {
                                 float y = Float.parseFloat(parts[1]);
                                 float z = Float.parseFloat(parts[2]);
                                 String[] row = {parts[0], parts[1], parts[2]};
-                                csvWriter.writeNext(row);
-                                csvWriter.close();
+                                // save the row only if x, y, z all have a dot in them
+                                if(parts[0].contains(".") && parts[1].contains(".") && parts[2].contains("."))
+                                {
+                                    csvWriter.writeNext(row);
+                                    csvWriter.close();
+                                }
+                                else{
+                                    Log.d("blabla", "Jump in x/y/z");
+                                }
                             }
-                            catch (NumberFormatException e){Log.d("NumberFormatException", "NumberFormatException");}
-                            int time = (int) Math.floor(Float.parseFloat(parts[3]));
-                            if (time % 5 == 0 && isFirstInFiveMinutes){
+                            catch (NumberFormatException e){Log.d("blabla", "string appeared");}
+                            int time = (int) Math.round((Float.parseFloat(parts[3])/1000.0));
+                            if (time % (TerminalFragment.intervalMinutes*60) == 0 && isFirstInFiveMinutes){
+                                Log.d("blabla" , TerminalFragment.intervalMinutes*60 + " % " + time);
                                 isFirstInFiveMinutes = false;
                                 TerminalFragment.calculatedCups += TerminalFragment.baselineInterval + TerminalFragment.residualCups;
-                                Log.d("calculatedCups", String.valueOf(TerminalFragment.calculatedCups));
+                                TerminalFragment.counterProgressBar += TerminalFragment.baselineInterval + TerminalFragment.residualCups;
                                 PyObject obj = pyobj.callAttr("get_preds" , file_path);
                                 int activity = obj.asList().get(0).toInt();
                                 int steps = obj.asList().get(1).toInt();
-                                Log.d("blabla", "hello");
+                                Log.d("blabla", String.valueOf(TerminalFragment.calculatedCups));
+                                if ((int) Math.floor(TerminalFragment.calculatedCups) >= 1){
+                                    TerminalFragment.residualCups = TerminalFragment.calculatedCups - (float)Math.floor(TerminalFragment.calculatedCups);
+                                    startNotification((int)Math.floor(TerminalFragment.calculatedCups), 0);
+                                    SharedPreferences sharedPreferences = this.getSharedPreferences(TerminalFragment.SHARED_PREFS_NAME, Context.MODE_PRIVATE);
+                                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                                    editor.putFloat(TerminalFragment.KEY_COUNTER_PROGRESS_BAR, TerminalFragment.counterProgressBar).apply();
+                                    TerminalFragment.calculatedCups = 0;
+                                }
                                 // empty the csv file
                                 clearCsvFile();
                             }
-                            else if (time % 5 != 0){
+                            else if (time % (TerminalFragment.intervalMinutes*60) != 0){
                                 isFirstInFiveMinutes = true;
                             }
                         }
@@ -347,18 +364,15 @@ public class SerialService extends Service implements SerialListener {
         return stringsArr;
     }
 
-    private void writeToCsv() {
-        try {
-            String currentCsv = "/sdcard/csv_dir/try2.csv";
-            CSVWriter csvWriter = new CSVWriter(new FileWriter(currentCsv, true));
-            for (String[] row : rowsContainer) {
-                csvWriter.writeNext(row);
-            }
-            csvWriter.close();
-            rowsContainer.clear();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    private void startNotification(int numCups, int notificationCounter){
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "myCh2")
+                .setSmallIcon(R.drawable.noification_logo)
+                .setContentTitle("Drinking Time")
+                .setContentText("Time to drink " + numCups + " cups");
+
+        notification = builder.build();
+        notificationManagerCompat = NotificationManagerCompat.from(this);
+        notificationManagerCompat.notify(notificationCounter, notification);
     }
 
     private void clearCsvFile() {
@@ -375,6 +389,4 @@ public class SerialService extends Service implements SerialListener {
             e.printStackTrace();
         }
     }
-
-
 }

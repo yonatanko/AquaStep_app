@@ -12,6 +12,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -56,7 +57,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     private enum Connected { False, Pending, True }
     private String deviceAddress;
     private SerialService service;
-    private TextView drankCups;
+    public static TextView drankCups;
     private TextView temperatureText;
     private TextView caloriesText;
     private TextUtil.HexWatcher hexWatcher;
@@ -78,15 +79,15 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     NotificationManagerCompat notificationManagerCompat;
     Notification notification;
     public int notificationCounter = 0;
-    float counterProgressBar = 0.0f;
-    ProgressBar progressBar;
+    public static float counterProgressBar = 0.0f;
+    public static ProgressBar progressBar;
     TextView userNameTextView;
 
     private static final String RESOURCE_NAME = "random_strings";
 
     private SharedPreferences sharedpreferences;
 
-    public int dailyTarget = 0;
+    public static int dailyTarget = 0;
 
     private int temperature;
 
@@ -95,7 +96,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
 
     public static float baselineInterval;
 
-    private int intervalMinutes = 5;
+    public static int intervalMinutes = 5;
 
     public static float residualCups = 0;
 
@@ -103,9 +104,9 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
 
     public static float calculatedCups = 0.0f;
 
-    private static final String SHARED_PREFS_NAME = "MyPrefs";
+    public static final String SHARED_PREFS_NAME = "MyPrefs";
     private static final String KEY_NOTIFICATION_COUNTER = "notification_counter";
-    private static final String KEY_COUNTER_PROGRESS_BAR = "counter_progress_bar";
+    public static final String KEY_COUNTER_PROGRESS_BAR = "counter_progress_bar";
     private static final String KEY_TEMPERATURE = "temperature";
 
     private static final String file_path = "/sdcard/csv_dir/data.csv";
@@ -174,6 +175,14 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
             initialStart = false;
             getActivity().runOnUiThread(this::connect);
         }
+
+        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
+        notificationCounter = sharedPreferences.getInt(KEY_NOTIFICATION_COUNTER, 0);
+        counterProgressBar = sharedPreferences.getFloat(KEY_COUNTER_PROGRESS_BAR, 0.0f);
+        temperature = sharedPreferences.getInt(KEY_TEMPERATURE, 25);
+        progressBar.setProgress((int) Math.floor(counterProgressBar));
+        drankCups.setText((int) Math.floor(counterProgressBar) + "/" + dailyTarget);
+        temperatureText.setText("Current temperature\n\n" + String.valueOf(temperature) + " \u2103");
     }
 
     @Override
@@ -355,7 +364,6 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
             String msg_to_save = msg.replace(TextUtil.newline_crlf, TextUtil.emptyString);
             if (msg_to_save.length() > 1){
                 String[] parts = clean_str(msg_to_save.split(","));
-
                 // Saving to CSV
                 try{
                     CSVWriter csvWriter = new CSVWriter(new FileWriter(file_path, true));
@@ -364,6 +372,12 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
                         float y = Float.parseFloat(parts[1]);
                         float z = Float.parseFloat(parts[2]);
                         String[] row = {parts[0], parts[1], parts[2]};
+                        // save the row only if x, y, z all have a dot in them
+                        if(parts[0].contains(".") && parts[1].contains(".") && parts[2].contains("."))
+                        {
+                            csvWriter.writeNext(row);
+                            csvWriter.close();
+                        }
                         csvWriter.writeNext(row);
                         csvWriter.close();
                     }
@@ -380,15 +394,13 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
                     temperatureText.setText("Current temperature\n\n" + String.valueOf(temperature)+ " \u2103");
                     isFirstTemp = false;
                 }
-                if (time % 2 == 0 && isFirstInFiveMinutes){
+                if (time % (intervalMinutes*60) == 0 && isFirstInFiveMinutes){
                     isFirstInFiveMinutes = false;
                     temperatureText.setText("Current temperature\n\n" + String.valueOf(temperature)+ " \u2103");
                     PyObject obj = pyobj.callAttr("get_preds" , file_path);
                     int activity = obj.asList().get(0).toInt();
                     int steps = obj.asList().get(1).toInt();
-                    Log.d("blabla", String.valueOf(activity) + ", " + String.valueOf(steps));
                     calculatedCups += baselineInterval + residualCups;
-                    Log.d("calculatedCups", String.valueOf(calculatedCups));
                     counterProgressBar += baselineInterval + residualCups;
                     if ((int) Math.floor(calculatedCups) >= 1){
                         residualCups = calculatedCups - (float)Math.floor(calculatedCups);
@@ -397,27 +409,12 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
                         progressBar.setProgress((int) Math.floor(counterProgressBar));
                         calculatedCups = 0;
                     }
+
+                    // empty the csv
+                    clearCsvFile();
                 }
-                if (time % 2 != 0)
+                if (time % (intervalMinutes*60) != 0)
                     isFirstInFiveMinutes = true;
-//                PyObject obj = pyobj.callAttr("main", x,y,z);
-//                float n_value = obj.toFloat();
-//                n_value_list.add(n_value);
-//                Log.d("size", String.valueOf(n_value_list.size()));
-//
-//                if (n_value_list.size() == elements_to_avg) {
-//                    float sum = 0.0f;
-//                    for(int i = 0; i < elements_to_avg; i++)
-//                        sum += n_value_list.get(i);
-//                    last_ten_N_avg = sum / elements_to_avg;
-//                    Log.d("avg is", String.valueOf(last_ten_N_avg));
-//
-//                    if (last_ten_N_avg > threshold) {
-//                        num_of_steps++;
-//                    }
-//                    n_value_list.subList(0, elements_to_remove).clear();
-                Log.d("size", String.valueOf(n_value_list.size()));
-//                }
             }
         }
     }
@@ -482,6 +479,21 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
 
     public static int ounceToCups(double ounces) {
         return (int) Math.round(ounces * 0.125);
+    }
+
+    private void clearCsvFile() {
+        String csvFile = Environment.getExternalStorageDirectory() + "/csv_dir/data.csv";
+
+        File file = new File(csvFile);
+        if (file.exists()) {
+            file.delete();
+        }
+
+        try {
+            file.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }

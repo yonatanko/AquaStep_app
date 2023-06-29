@@ -70,10 +70,6 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
         userWeight = findViewById(R.id.EnterUserWeight);
         userSleepingHours = findViewById(R.id.EnterSleepingHours);
         genderRadioGroup = findViewById(R.id.genderRadioGroup);
-//        SharedPreferences sharedpreferences = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
-////        SharedPreferences settings = getApplicationContext().getSharedPreferences("AquaStep", Context.MODE_PRIVATE);
-////        settings.edit().clear().apply();
-
 
         if (ContextCompat.checkSelfPermission(MainActivity.this,Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ){
             ActivityCompat.requestPermissions(MainActivity.this,new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},0);
@@ -131,7 +127,7 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
                         genderRadioGroup.setVisibility(View.GONE);
 
                         if (savedInstanceState==null){
-                            getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
+                            getSupportFragmentManager().beginTransaction().add(R.id.fragment, new InstructionsFragment(), "instructions").commit();
                         }
                         else{
                             onBackStackChanged();
@@ -167,6 +163,7 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
             userActivity.setVisibility(View.GONE);
             userWeight.setVisibility(View.GONE);
             userSleepingHours.setVisibility(View.GONE);
+            genderRadioGroup.setVisibility(View.GONE);
             RelativeLayout rl = (RelativeLayout) findViewById(R.id.fragment);
             rl.setBackgroundColor(getResources().getColor(R.color.cardview_dark_background));
         }

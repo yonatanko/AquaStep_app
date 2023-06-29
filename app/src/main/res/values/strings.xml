@@ -1,6 +1,15 @@
 <resources>
     <string name="app_name">AquaStep</string>
     <string name="devices">Bluetooth Devices</string>
+    <string name="about_us_title">About us</string>
+    <string name="about_us_text">At AquaStep, we are dedicated to promoting a healthy lifestyle through optimal hydration.\nOur app helps you track and improve your water intake, making hydration convenient and personalized.</string>
+    <string name="about_the_app_title">About the App</string>
+    <string name="about_the_app_text">
+       AquaStep is an innovative app that calculates your ideal water intake based on your activity level, body weight, and environment.
+        Stay on top of your hydration goals and maintain a healthy water balance effortlessly.
+    </string>
+    <string name="instructions_title">Instructions</string>
+    <string name="instructions_text">1. Place the Sensor: Attach our sensor to your belt for accurate activity tracking and personalized recommendations.\n2. "Go to Sleep" Button: Press the button to End the daily tracking. The app will then reset and start tracking the next day.\nLet AquaStep support you in achieving optimal hydration and a healthier lifestyle. Stay hydrated and let us guide you on your journey. </string>
     <string-array name="random_strings">
         <item>Drinking enough water can help improve cognitive function and concentration.</item>
         <item>Drinking water can help boost your metabolism and aid in weight loss.</item>
