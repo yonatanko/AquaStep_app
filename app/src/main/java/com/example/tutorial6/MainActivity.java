@@ -5,6 +5,7 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -53,9 +54,7 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
     public static String username;
     public static int weight;
     public static int numActivity;
-
     public static int sleepingHours;
-
     public static String gender;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,15 +125,13 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
                         userSleepingHours.setVisibility(View.GONE);
                         genderRadioGroup.setVisibility(View.GONE);
 
-                        if (savedInstanceState==null){
-                            getSupportFragmentManager().beginTransaction().add(R.id.fragment, new InstructionsFragment(), "instructions").commit();
-                        }
-                        else{
-                            onBackStackChanged();
-                        }
-
                         RelativeLayout rl = (RelativeLayout)findViewById(R.id.fragment);
-                        rl.setBackgroundColor(getResources().getColor(R.color.cardview_dark_background));
+                        rl.setBackgroundColor(getResources().getColor(R.color.waterBlue));
+
+                        DevicesFragment devicesFragment = (DevicesFragment) getSupportFragmentManager().findFragmentByTag("devices");
+                        if (devicesFragment == null) {
+                            getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
+                        }
 
                     }
                 }
@@ -152,6 +149,8 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
             numActivity = sharedpreferences.getInt("numActivity", 0);
             weight = sharedpreferences.getInt("userWeight", 0);
             sleepingHours = sharedpreferences.getInt("sleepingHours", sleepingHours);
+            gender = sharedpreferences.getString("userGender", "");
+
 
             DevicesFragment devicesFragment = (DevicesFragment) getSupportFragmentManager().findFragmentByTag("devices");
             if (devicesFragment == null) {

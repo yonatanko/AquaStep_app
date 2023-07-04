@@ -62,6 +62,7 @@ public class DevicesFragment extends ListFragment {
         setEmptyText("initializing...");
         ((TextView) getListView().getEmptyView()).setTextSize(18);
         setListAdapter(listAdapter);
+        getListView().setBackground(getResources().getDrawable(R.color.waterBlue));
     }
 
     @Override
@@ -92,6 +93,11 @@ public class DevicesFragment extends ListFragment {
             startActivity(intent);
             return true;
         } else {
+            if (id == R.id.headToInstructions){
+                Intent intent = new Intent(getActivity(), Instructions.class);
+                startActivity(intent);
+                return true;
+            }
             return super.onOptionsItemSelected(item);
         }
     }

@@ -75,7 +75,7 @@ def peaks_diff(norms, activity):
 
 def get_preds(file_path):
     reg_model = pickle.load(open("/sdcard/reg_xgboost_model.pickle", 'rb'))
-    class_model = pickle.load(open("/sdcard/xgboost_model.pickle", 'rb'))
+    class_model = pickle.load(open("/sdcard/all_activties_class_xgboost_model.pickle", 'rb'))
     df = pd.read_csv(file_path)
     df = df.dropna()
 

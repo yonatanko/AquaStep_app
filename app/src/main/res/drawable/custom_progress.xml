@@ -16,7 +16,7 @@
             android:useLevel="true"
             android:width="10dp"
             android:height="10dp">
-            <solid android:color="#3aa8c1"></solid>
+            <solid android:color="#00FBC0"></solid>
         </shape>
     </item>
 </layer-list>

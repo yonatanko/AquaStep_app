@@ -9,7 +9,7 @@
         Stay on top of your hydration goals and maintain a healthy water balance effortlessly.
     </string>
     <string name="instructions_title">Instructions</string>
-    <string name="instructions_text">1. Place the Sensor: Attach our sensor to your belt for accurate activity tracking and personalized recommendations.\n2. "Go to Sleep" Button: Press the button to End the daily tracking. The app will then reset and start tracking the next day.\nLet AquaStep support you in achieving optimal hydration and a healthier lifestyle. Stay hydrated and let us guide you on your journey. </string>
+    <string name="instructions_text">1. Place the Sensor: Attach our sensor to your belt. Make sure it\'s located on your strong leg.\n2. Connect to the AquaStep bluetooth device called "AquaStepBT"\n3. "Go to Sleep" Button: Press the button to End the daily tracking. The app will then reset and start tracking the next day.</string>
     <string-array name="random_strings">
         <item>Drinking enough water can help improve cognitive function and concentration.</item>
         <item>Drinking water can help boost your metabolism and aid in weight loss.</item>
@@ -39,5 +39,7 @@
         <item>Staying properly hydrated can help improve mood and reduce stress levels.</item>
         <item>Water is essential for the maintenance of overall good health and well-being.</item>
     </string-array>
+
+    <string name="cancel">I drank 1 cup</string>
 
 </resources>

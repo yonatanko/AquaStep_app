@@ -19,6 +19,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -171,47 +172,6 @@ public class SerialService extends Service implements SerialListener {
         listener = null;
     }
 
-    private void createNotification() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel nc = new NotificationChannel(Constants.NOTIFICATION_CHANNEL, "Background service", NotificationManager.IMPORTANCE_LOW);
-            nc.setShowBadge(false);
-            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            nm.createNotificationChannel(nc);
-        }
-        Intent disconnectIntent = new Intent()
-                .setAction(Constants.INTENT_ACTION_DISCONNECT);
-        Intent restartIntent = new Intent()
-                .setClassName(this, Constants.INTENT_CLASS_MAIN_ACTIVITY)
-                .setAction(Intent.ACTION_MAIN)
-                .addCategory(Intent.CATEGORY_LAUNCHER);
-        PendingIntent disconnectPendingIntent = PendingIntent.getBroadcast(this, 1, disconnectIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        PendingIntent restartPendingIntent = PendingIntent.getActivity(this, 1, restartIntent,  PendingIntent.FLAG_UPDATE_CURRENT);
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, Constants.NOTIFICATION_CHANNEL)
-                .setSmallIcon(R.drawable.ic_notification)
-                .setColor(getResources().getColor(R.color.colorPrimary))
-                .setContentTitle(getResources().getString(R.string.app_name))
-                .setContentText(socket != null ? "Connected to "+ socket.getName() : "Background Service")
-                .setContentIntent(restartPendingIntent)
-                .setOngoing(true)
-                .addAction(new NotificationCompat.Action(R.drawable.ic_clear_white_24dp, "Disconnect", disconnectPendingIntent));
-        // @drawable/ic_notification created with Android Studio -> New -> Image Asset using @color/colorPrimaryDark as background color
-        // Android < API 21 does not support vectorDrawables in notifications, so both drawables used here, are created as .png instead of .xml
-        Notification notification = builder.build();
-        startForeground(Constants.NOTIFY_MANAGER_START_FOREGROUND_SERVICE, notification);
-    }
-
-    public void createPushNotification() {
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "myCh2")
-                .setSmallIcon(R.drawable.noification_logo)
-                .setContentTitle(getResources().getString(R.string.app_name))
-                .setContentText("Hello");
-
-        Notification notification = builder.build();
-
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-        counter += 1;
-        notificationManager.notify(counter, notification);
-    }
 
     private void cancelNotification() {
         stopForeground(true);
@@ -248,12 +208,14 @@ public class SerialService extends Service implements SerialListener {
                         } else {
                             queue1.add(new QueueItem(QueueType.ConnectError, null, e));
                             cancelNotification();
+                            BTDisconnectedNotification();
                             disconnect();
                         }
                     });
                 } else {
                     queue2.add(new QueueItem(QueueType.ConnectError, null, e));
                     cancelNotification();
+                    BTDisconnectedNotification();
                     disconnect();
                 }
             }
@@ -300,21 +262,33 @@ public class SerialService extends Service implements SerialListener {
                             }
                             catch (NumberFormatException e){Log.d("blabla", "string appeared");}
                             int time = (int) Math.round((Float.parseFloat(parts[3])/1000.0));
-                            if (time % (TerminalFragment.intervalMinutes*60) == 0 && isFirstInFiveMinutes){
-                                Log.d("blabla" , TerminalFragment.intervalMinutes*60 + " % " + time);
+                            float f_temperature = Float.parseFloat(parts[4]);
+                            TerminalFragment.temperature = Math.round(f_temperature);
+
+                            if (time % (TerminalFragment.intervalMinutes*60) == 0 && isFirstInFiveMinutes && time != 0){
+                                TerminalFragment.notificationCounter++;
                                 isFirstInFiveMinutes = false;
-                                TerminalFragment.calculatedCups += TerminalFragment.baselineInterval + TerminalFragment.residualCups;
-                                TerminalFragment.counterProgressBar += TerminalFragment.baselineInterval + TerminalFragment.residualCups;
                                 PyObject obj = pyobj.callAttr("get_preds" , file_path);
                                 int activity = obj.asList().get(0).toInt();
-                                int steps = obj.asList().get(1).toInt();
-                                Log.d("blabla", String.valueOf(TerminalFragment.calculatedCups));
+                                if (TerminalFragment.temperature > 30 && activity == 1) { // Running while too hot
+                                    TerminalFragment.play(TerminalFragment.hotTempBeep);
+                                    TerminalFragment.play(TerminalFragment.hotTempTextualSound);
+                                }
+                                int steps;
+                                if (activity == 2) // Rest
+                                    steps = 0;
+                                else
+                                    steps = obj.asList().get(1).toInt();
+                                float calculatedWaterIntake = TerminalFragment.calculatedWater(TerminalFragment.baselineInterval, TerminalFragment.temperature, steps, activity, TerminalFragment.gender);
+                                TerminalFragment.calculatedCups += calculatedWaterIntake + TerminalFragment.residualCups;
+                                TerminalFragment.counterProgressBar += calculatedWaterIntake + TerminalFragment.residualCups;
+                                TerminalFragment.dailyTarget += calculatedWaterIntake - TerminalFragment.baselineInterval;
+
+                                if ((int) Math.floor(TerminalFragment.counterProgressBar) == TerminalFragment.dailyTarget) // reached target
+                                    TerminalFragment.play(TerminalFragment.reachedTargetBeep);
                                 if ((int) Math.floor(TerminalFragment.calculatedCups) >= 1){
                                     TerminalFragment.residualCups = TerminalFragment.calculatedCups - (float)Math.floor(TerminalFragment.calculatedCups);
-                                    startNotification((int)Math.floor(TerminalFragment.calculatedCups), 0);
-                                    SharedPreferences sharedPreferences = this.getSharedPreferences(TerminalFragment.SHARED_PREFS_NAME, Context.MODE_PRIVATE);
-                                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                                    editor.putFloat(TerminalFragment.KEY_COUNTER_PROGRESS_BAR, TerminalFragment.counterProgressBar).apply();
+                                    startNotification((int)Math.floor(TerminalFragment.calculatedCups), TerminalFragment.notificationCounter);
                                     TerminalFragment.calculatedCups = 0;
                                 }
                                 // empty the csv file
@@ -326,6 +300,7 @@ public class SerialService extends Service implements SerialListener {
                         }
                     }
                     catch (IOException e) {
+                        Toast.makeText(this, "Error in writing to csv file", Toast.LENGTH_SHORT).show();
                         e.printStackTrace();
                     }
                 }
@@ -365,18 +340,80 @@ public class SerialService extends Service implements SerialListener {
     }
 
     private void startNotification(int numCups, int notificationCounter){
+        Intent cancelIntent = new Intent(this, updateProgressBar.class);
+        cancelIntent.setAction(updateProgressBar.ACTION_CANCEL);
+        PendingIntent cancelPendingIntent =
+                PendingIntent.getBroadcast(this, notificationCounter,
+                        cancelIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "myCh2")
                 .setSmallIcon(R.drawable.noification_logo)
                 .setContentTitle("Drinking Time")
-                .setContentText("Time to drink " + numCups + " cups");
+                .setContentText("Time to drink " + String.valueOf(numCups) + " cups")
+                .addAction(new NotificationCompat.Action(R.color.colorPrimary, "Done!", cancelPendingIntent));
 
         notification = builder.build();
         notificationManagerCompat = NotificationManagerCompat.from(this);
         notificationManagerCompat.notify(notificationCounter, notification);
     }
 
+    private void calculatedNotification(int activity, int steps, float calculatedCups, int calories, int notificationCounter){
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "myCh2")
+                .setSmallIcon(R.drawable.noification_logo)
+                .setContentTitle("Calculations")
+                .setContentText("Activity: " + activity + " Steps: " + steps + " Calculated Cups: " + calculatedCups + " Calories: " + calories);
+
+        notification = builder.build();
+        notificationManagerCompat = NotificationManagerCompat.from(this);
+        notificationManagerCompat.notify(notificationCounter, notification);
+    }
+
+    private void createNotification() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel nc = new NotificationChannel(Constants.NOTIFICATION_CHANNEL, "Background service", NotificationManager.IMPORTANCE_LOW);
+            nc.setShowBadge(false);
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            nm.createNotificationChannel(nc);
+        }
+        Intent disconnectIntent = new Intent()
+                .setAction(Constants.INTENT_ACTION_DISCONNECT);
+        Intent restartIntent = new Intent()
+                .setClassName(this, Constants.INTENT_CLASS_MAIN_ACTIVITY)
+                .setAction(Intent.ACTION_MAIN)
+                .addCategory(Intent.CATEGORY_LAUNCHER);
+        PendingIntent disconnectPendingIntent = PendingIntent.getBroadcast(this, 1, disconnectIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent restartPendingIntent = PendingIntent.getActivity(this, 1, restartIntent,  PendingIntent.FLAG_UPDATE_CURRENT);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, Constants.NOTIFICATION_CHANNEL)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setColor(getResources().getColor(R.color.colorPrimary))
+                .setContentTitle(getResources().getString(R.string.app_name))
+                .setContentText(socket != null ? "Connected to "+ socket.getName() : "Background Service")
+                .setContentIntent(restartPendingIntent)
+                .setOngoing(true)
+                .addAction(new NotificationCompat.Action(R.drawable.ic_clear_white_24dp, "Disconnect", disconnectPendingIntent));
+        // @drawable/ic_notification created with Android Studio -> New -> Image Asset using @color/colorPrimaryDark as background color
+        // Android < API 21 does not support vectorDrawables in notifications, so both drawables used here, are created as .png instead of .xml
+        Notification notification = builder.build();
+        startForeground(Constants.NOTIFY_MANAGER_START_FOREGROUND_SERVICE, notification);
+    }
+
+    public void BTDisconnectedNotification() {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "myCh2")
+                .setSmallIcon(R.drawable.noification_logo)
+                .setContentTitle(getResources().getString(R.string.app_name))
+                .setContentText("Bluetooth device is disconnected. open the app to reconnect");
+
+        Notification notification = builder.build();
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+        counter += 1;
+        notificationManager.notify(counter, notification);
+    }
+
+
+
     private void clearCsvFile() {
-        String csvFile = Environment.getExternalStorageDirectory() + "/csv_dir/data.csv";
+        String csvFile = Environment.getExternalStorageDirectory() + "/data.csv";
 
         File file = new File(csvFile);
         if (file.exists()) {
