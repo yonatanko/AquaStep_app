@@ -371,32 +371,18 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
 
             return true;
         } else {
-            if (id == R.id.resetCups){
-                notificationCounter = 0;
-                counterProgressBar = 0.0f;
-                progressBar.setProgress(0);
-                SharedPreferences.Editor editor = sharedpreferences.edit();
-                editor.putInt(KEY_NOTIFICATION_COUNTER, notificationCounter);
-                editor.putFloat(KEY_COUNTER_PROGRESS_BAR, counterProgressBar);
-                editor.putInt(KEY_TEMPERATURE, temperature);
-                editor.putInt(KEY_CALORIES, calories);
-                editor.apply();
-                drankCupsText.setText("0" + "/" + dailyTarget);
+            if (id == R.id.WeeklyReport){
+                Intent intent = new Intent(getActivity(), WeeklyStats.class);
+                startActivity(intent);
                 return true;
             }
             else
-                if (id == R.id.WeeklyReport){
-                    Intent intent = new Intent(getActivity(), WeeklyStats.class);
+                if (id == R.id.headToInstructions2){
+                    Intent intent = new Intent(getActivity(), Instructions.class);
                     startActivity(intent);
                     return true;
                 }
-                else
-                    if (id == R.id.headToInstructions2){
-                        Intent intent = new Intent(getActivity(), Instructions.class);
-                        startActivity(intent);
-                        return true;
-                    }
-                    return super.onOptionsItemSelected(item);
+                return super.onOptionsItemSelected(item);
         }
     }
 

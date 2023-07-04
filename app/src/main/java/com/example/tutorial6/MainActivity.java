@@ -83,10 +83,13 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
             NotificationManager manager = getSystemService(NotificationManager.class);
             manager.createNotificationChannel(channel);
         }
+        Boolean current = isFirstLaunch;
+
+        SharedPreferences sharedpreferences = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
         contButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (isFirstLaunch) {
+                if (sharedpreferences.getBoolean("firstRun", true)) {
                     if (userName.getText().toString().equals("") || userActivity.getText().toString().equals("") || userWeight.getText().toString().equals("") || userSleepingHours.getText().toString().equals("")) {
                         AlphaAnimation animation1 = new AlphaAnimation(0.2f, 1.0f);
                         animation1.setDuration(1500);
@@ -102,8 +105,7 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
                     else{
                         SharedPreferences sharedpreferences = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
                         SharedPreferences.Editor editor = sharedpreferences.edit();
-                        editor.putBoolean(prevStarted, false).apply();
-                        isFirstLaunch = false;
+                        editor.putBoolean("firstRun", false).apply();
                         username = userName.getText().toString();
                         weight = Integer.parseInt(userWeight.getText().toString());
                         numActivity = Integer.parseInt(userActivity.getText().toString());
@@ -125,6 +127,9 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
                         userSleepingHours.setVisibility(View.GONE);
                         genderRadioGroup.setVisibility(View.GONE);
 
+                        Intent intent = new Intent(getApplicationContext(), Instructions.class);
+                        startActivity(intent);
+
                         RelativeLayout rl = (RelativeLayout)findViewById(R.id.fragment);
                         rl.setBackgroundColor(getResources().getColor(R.color.waterBlue));
 
@@ -143,8 +148,7 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
     public void onResume() {
         super.onResume();
         SharedPreferences sharedpreferences = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
-        isFirstLaunch = sharedpreferences.getBoolean(prevStarted, true);
-        if (!isFirstLaunch) {
+        if (!sharedpreferences.getBoolean("firstRun", true)) {
             username = sharedpreferences.getString("userName", "");
             numActivity = sharedpreferences.getInt("numActivity", 0);
             weight = sharedpreferences.getInt("userWeight", 0);

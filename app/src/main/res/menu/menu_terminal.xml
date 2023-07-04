@@ -6,10 +6,6 @@
         android:id="@+id/EditInput"
         android:title="Change details"
         app:showAsAction="never" />
-    <item
-        android:id="@+id/resetCups"
-        android:title="Reset cups"
-        app:showAsAction="never" />
 
     <item
         android:id="@+id/WeeklyReport"
