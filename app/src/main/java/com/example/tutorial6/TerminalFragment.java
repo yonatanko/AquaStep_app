@@ -104,7 +104,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
 
     public static float baselineInterval;
 
-    public static int intervalMinutes = 1;
+    public static int intervalMinutes = 5;
 
     public static float residualCups = 0;
 
@@ -357,7 +357,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         if (id == R.id.EditInput) {
             // Reset the isFirstLaunch flag to true
             SharedPreferences.Editor editor = sharedpreferences.edit();
-            editor.putBoolean(MainActivity.prevStarted, true).apply();
+            editor.putBoolean("firstRun", true).apply();
 
             // Clear the saved user data
             editor.remove("userName").apply();
