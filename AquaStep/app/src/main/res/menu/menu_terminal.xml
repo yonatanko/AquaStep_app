@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/EditInput"
+        android:title="Change details"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/WeeklyReport"
+        android:title="Weekly Report"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/headToInstructions2"
+        android:title="Instructions"
+        app:showAsAction="never" />
+</menu>
