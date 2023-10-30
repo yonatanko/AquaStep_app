@@ -1,2 +1,6 @@
-# AquaStep_app
-[IOT_Project_Report.pdf](https://github.com/yonatanko/AquaStep_app/files/13195712/IOT_Project_Report.pdf)
+# AquaStep app
+
+[IOT Project assignment.pdf](https://github.com/yonatanko/AquaStep_app/files/13206492/IOT.Project.assignment.pdf)
+[IOT Project Report.pdf](https://github.com/yonatanko/AquaStep_app/files/13206490/IOT.Project.Report.pdf)
+
+
